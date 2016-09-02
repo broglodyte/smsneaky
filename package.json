@@ -1,0 +1,24 @@
+{
+  "name": "smsneaky",
+  "version": "1.0.0",
+  "description": "RESTful Node.JS API to listen for incoming hooks from Burner SMS app",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/broglodyte/smsneaky.git"
+  },
+  "keywords": [
+    "sms",
+    "text",
+    "api"
+  ],
+  "author": "broglodyte",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/broglodyte/smsneaky/issues"
+  },
+  "homepage": "https://github.com/broglodyte/smsneaky#readme"
+}
