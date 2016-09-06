@@ -15,10 +15,21 @@ app.use(express.static(__dirname + '/public'));
 // app.set('view engine', 'ejs');
 
 app.get('/', function (request, response) {
-	response.json({
-		status : 'success',
-		texts : {
-			blah: 'foo'
+	fs.readFile(filename, utf8, (err, data) => {
+		if(err)
+			return response.status(500).json({error: 'Error reading file: ' + err});
+		
+		try {
+			var jsonData = JSON.parse(data);
+			fs.writeFile(filename, '{}', utf8, (err) => {
+			if(err)
+				return response.status(500).json({status: 'Error clearing file: ' + err});
+				
+			response.json(jsonData);
+			});
+		}
+		catch(err) {
+			response.status(500).json({status: 'Unknown error: ' + err});
 		}
 	});
 });
@@ -32,7 +43,7 @@ app.post('/incoming', jsonParser, (req, resp) => {
 		if(err)
 			return resp.status(500).send('Error writing file: ' + err);
 		
-		resp.status(201).send('Success');		
+		resp.status(201).json({status: 'Success'});
 	});
 });
 
