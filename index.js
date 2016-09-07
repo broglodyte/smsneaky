@@ -3,6 +3,7 @@ var path = require('path');
 var express = require('express');
 var bodyParser = require('body-parser');
 	var app = express();
+	
 var jsonParser = bodyParser.json();
 app.set('port', (process.env.PORT || 5000));
 var filename = 'texts.txt';
@@ -33,7 +34,7 @@ app.get('/inbox', function (request, response) {
 	});
 });
 
-/*
+/* --JSON data formats-- /*
 
 Incoming JSON blobs should be all like:
 [for now we only care about 'type', 'payload', 'fromNumber', and 'toNumber']	{
@@ -58,7 +59,8 @@ msgBlobs should be like so:	{
 }
 
  */
-app.post('/incoming', jsonParser, (req, resp) => {
+
+ app.post('/incoming', jsonParser, (req, resp) => {
 		if (!req.body || !req.body.type)
 			return resp.status(400).json({error: `error: invalid data`});
 
@@ -69,10 +71,13 @@ app.post('/incoming', jsonParser, (req, resp) => {
 			var msgBlob = getBlobFromJSON(req.body);
 
 			fs.readFile(filename, utf8, (err, data) => {
-				if(err) 
-					return resp.status(500).json({
+				if(err)
+					if(err.code === 'ENOENT')
+						fs.writeFileSync(filename, data = '{}', utf8);
+					else return resp.status(500).json({
 						error : `Error reading database : ${err}`
 					})
+					
 				var jsonDB = JSON.parse(data);
 				
 				if(!jsonDB[msgRecipient])
