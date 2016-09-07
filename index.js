@@ -5,22 +5,23 @@ var bodyParser = require('body-parser');
 	var app = express();
 	
 var jsonParser = bodyParser.json();
-app.set('port', (process.env.PORT || 5000));
+app.set('port', (process.env.PORT || 5001));
 var filename = 'texts.txt';
 var utf8 = 'utf8';
 app.set('filename', filename);
 app.use(express.static(__dirname + '/public'));
 
-// views is directory for all template files
-// app.set('views', __dirname + '/views');
-// app.set('view engine', 'ejs');
+app.get('/', (req, res) => {
+	res.redirect(301, '/inbox');
+});
 
 app.get('/inbox', function (request, response) {
 	fs.readFile(filename, utf8, (err, data) => {
 		if (err)
-			return response.status(500).json({
-				error : `Error reading file: ${err}`
-			});
+			if(err.code === 'ENOENT')
+				fs.writeFileSync(filename, data = '{}', utf8);
+			else 
+				return response.status(500).json({error : `Error reading database: ${err}`});
 
 		try {
 			var jsonData = JSON.parse(data);
