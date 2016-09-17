@@ -11,31 +11,48 @@ var jsonParser = bodyParser.json();
 var app = express();
 
 var mongodb = require('mongodb');
-var Db = mongodb.Db;
-var Server = mongodb.Server;
-var Connection = mongodb.Connection;
+var MongoClient = mongodb.MongoClient;
 
-const DB_HOST = process.env.DB_HOST;
-const DB_PORT = process.env.DB_PORT;
-const DB_NAME = process.env.DB_NAME;
-const DB_USER = process.env.DB_USER;
-const DB_PASS = process.env.DB_PASS;
+var db;
 
-var mongoUri = `mongodb://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
-console.log('MongoDB URI: ' + mongoUri);
+MongoClient.connect(process.env.DB_URI, function (err, database) {
+  if (err) {
+    console.log(err);
+    process.exit(1);
+  }
 
-var db = new Db(DB_NAME, new Server(DB_HOST, DB_PORT, {}), {
-	native_parser : false
+  // Save database object from the callback for reuse.
+  db = database;
+  console.log("Database connection ready");
+
+  // Initialize the app.
+  var server = app.listen(process.env.PORT || 8080, function () {
+    var port = server.address().port;
+    console.log("App now running on port", port);
+  });
 });
 
-app.set('port', process.env.HTTP_PORT || 10101);
+// var Db = mongodb.Db;
+// var Server = mongodb.Server;
+// var Connection = mongodb.Connection;
 
-var jsonFilePath = 'texts.txt';
-var utf8 = 'utf8';
-// app.set('filename', jsonFilePath);
-app.use(express.static(__dirname + '/public'));
+// const DB_HOST = process.env.DB_HOST;
+// const DB_PORT = process.env.DB_PORT;
+// const DB_NAME = process.env.DB_NAME;
+// const DB_USER = process.env.DB_USER;
+// const DB_PASS = process.env.DB_PASS;
+
+// var mongoUri = `mongodb://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+// console.log('MongoDB URI: ' + mongoUri);
+
+// var db = new Db(DB_NAME, new Server(DB_HOST, DB_PORT, {}), {
+	// native_parser : false
+// });
+
+app.set('port', process.env.PORT || 10101);
 
 app.get('/', (req, res) => {
+	console.log('redirect...');
 	res.redirect(301, '/inbox');
 });
 
@@ -107,10 +124,6 @@ app.post('/incoming', jsonParser, (req, resp) => {
 			status : 'failure'
 		});
 	}
-});
-
-app.listen(app.get('port'), function () {
-	console.log('SMSneaky app is running on port', app.get('port'));
 });
 
 function getBlobFromJSON(jsonTxt) {
