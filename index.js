@@ -1,14 +1,38 @@
+
+require('dotenv').config();
+
 var fs = require('fs');
 var path = require('path');
+var moment = require('moment');
+
 var express = require('express');
 var bodyParser = require('body-parser');
-	var app = express();
-	
 var jsonParser = bodyParser.json();
-app.set('port', (process.env.PORT || 5001));
-var filename = 'texts.txt';
+var app = express();
+
+var mongodb = require('mongodb');
+var Db = mongodb.Db;
+var Server = mongodb.Server;
+var Connection = mongodb.Connection;
+
+const DB_HOST = process.env.DB_HOST;
+const DB_PORT = process.env.DB_PORT;
+const DB_NAME = process.env.DB_NAME;
+const DB_USER = process.env.DB_USER;
+const DB_PASS = process.env.DB_PASS;
+
+var mongoUri = `mongodb://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+console.log('MongoDB URI: ' + mongoUri);
+
+var db = new Db(DB_NAME, new Server(DB_HOST, DB_PORT, {}), {
+	native_parser : false
+});
+
+app.set('port', process.env.HTTP_PORT || 10101);
+
+var jsonFilePath = 'texts.txt';
 var utf8 = 'utf8';
-app.set('filename', filename);
+// app.set('filename', jsonFilePath);
 app.use(express.static(__dirname + '/public'));
 
 app.get('/', (req, res) => {
@@ -16,22 +40,14 @@ app.get('/', (req, res) => {
 });
 
 app.get('/inbox', function (request, response) {
-	fs.readFile(filename, utf8, (err, data) => {
+	db.collection('inbox').find({}).toArray((err, items) => {
 		if (err)
-			if(err.code === 'ENOENT')
-				fs.writeFileSync(filename, data = '{}', utf8);
-			else 
-				return response.status(500).json({error : `Error reading database: ${err}`});
-
-		try {
-			var jsonData = JSON.parse(data);
-			response.json(jsonData);
-		} 
-		catch (err) {
-			response.status(500).json({
-				error : `Unknown error: ${err}`
+			return response.status(500).json({
+				error : `Error reading database: ${err}`,
+				status : 'failure'
 			});
-		}
+
+		response.json(items);
 	});
 });
 
@@ -57,61 +73,54 @@ msgBlobs should be like so:	{
 "fromNumber" : "[whoever sent the text]",
 "payload"    : "[whatever the text said]"
 "timestamp"  : "[whatever the date/time of arrival is]",
+"dateTime"   : "[formatted date and time, calculated from 'timestamp']"
 }
 
  */
 
- app.post('/incoming', jsonParser, (req, resp) => {
-		if (!req.body || !req.body.type)
-			return resp.status(400).json({error: `error: invalid data`});
+app.post('/incoming', jsonParser, (req, resp) => {
+	if (!req.body || !req.body.type)
+		return resp.status(400).json({
+			error : 'invalid data',
+			status : 'failure'
+		});
 
-		// var msgType = req.body.type;
+	if (req.body.type === 'inboundText') {
+		var msgSender = req.body.fromNumber;
+		var msgBlob = getBlobFromJSON(req.body);
 
-		if (req.body.type === 'inboundText') {
-			var msgRecipient = req.body.toNumber;
-			var msgBlob = getBlobFromJSON(req.body);
-
-			fs.readFile(filename, utf8, (err, data) => {
-				if(err)
-					if(err.code === 'ENOENT')
-						fs.writeFileSync(filename, data = '{}', utf8);
-					else return resp.status(500).json({
-						error : `Error reading database : ${err}`
-					})
-					
-				var jsonDB = JSON.parse(data);
-				
-				if(!jsonDB[msgRecipient])
-					jsonDB[msgRecipient] = [];
-				
-				jsonDB[msgRecipient].push(msgBlob);
-
-				fs.writeFile(filename, JSON.stringify(jsonDB, null, 4), utf8, (err) => {
-					if (err)
-						return resp.status(500).json({
-							error :  `Error writing file : ${err}`
-						});
-
-					resp.status(201).json({
-						error : undefined,
-						status : "success"
-					});
+		db.collection('inbox').insertOne(msgBlob, (err, r) => {
+			if (err || r.insertedCount !== 1)
+				return resp.status(500).json({
+					error : err || `[insertedCount (${r.insertedCount}) not equal to 1]`,
+					status : 'failure'
 				});
-			});
-		} else {
-			return resp.status(401).json({error: `error: invalid data`});
-		}
 
-	});
+			return resp.status(201).json({
+				status : 'success',
+				resultData : r
+			});
+		});
+	} else {
+		return resp.status(401).json({
+			error : `error: invalid data`,
+			status : 'failure'
+		});
+	}
+});
 
 app.listen(app.get('port'), function () {
-	console.log('Node app is running on port', app.get('port'));
+	console.log('SMSneaky app is running on port', app.get('port'));
 });
 
 function getBlobFromJSON(jsonTxt) {
-	return {
+	var timestamp = Date.now();
+	var fmtDateTime = moment(timestamp).format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
+	var returnBlob = {
 		fromNumber : jsonTxt.fromNumber,
 		payload : jsonTxt.payload,
-		timestamp : Date.now()
-	}
+		timestamp : timestamp,
+		dateTime : fmtDateTime
+	};
+	return returnBlob;
 }

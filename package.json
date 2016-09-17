@@ -9,8 +9,11 @@
   },
   "dependencies": {
     "body-parser": "^1.15.2",
+    "dotenv": "^2.0.0",
     "ejs": "2.4.1",
-    "express": "4.13.3"
+    "express": "4.13.3",
+    "moment": "^2.15.0",
+    "mongodb": "^2.2.10"
   },
   "repository": {
     "type": "git",
