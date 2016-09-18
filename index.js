@@ -15,7 +15,7 @@ var MongoClient = mongodb.MongoClient;
 
 var db;
 
-MongoClient.connect(process.env.DB_URI, function (err, database) {
+MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
   if (err) {
     console.log(err);
     process.exit(1);
@@ -28,26 +28,10 @@ MongoClient.connect(process.env.DB_URI, function (err, database) {
   // Initialize the app.
   var server = app.listen(process.env.PORT || 8080, function () {
     var port = server.address().port;
-    console.log("App now running on port", port);
+    console.log(`App now running on port [${port}]`);
   });
 });
 
-// var Db = mongodb.Db;
-// var Server = mongodb.Server;
-// var Connection = mongodb.Connection;
-
-// const DB_HOST = process.env.DB_HOST;
-// const DB_PORT = process.env.DB_PORT;
-// const DB_NAME = process.env.DB_NAME;
-// const DB_USER = process.env.DB_USER;
-// const DB_PASS = process.env.DB_PASS;
-
-// var mongoUri = `mongodb://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
-// console.log('MongoDB URI: ' + mongoUri);
-
-// var db = new Db(DB_NAME, new Server(DB_HOST, DB_PORT, {}), {
-	// native_parser : false
-// });
 
 app.set('port', process.env.PORT || 10101);
 
@@ -68,6 +52,35 @@ app.get('/inbox', function (request, response) {
 	});
 });
 
+app.get('/inbox/from/:number', function(req, res) {
+	db.collection('inbox').find(
+		{'fromNumber': req.params.number}, 
+		{'_id': 0, 'fromNumber': 1, 'payload': 1, 'dateTime': 1})
+	.toArray( (err, items) => {
+		if (err)
+			return response.status(500).json({
+				error : `Error reading database: ${err}`,
+				status : 'failure'
+			});
+
+		response.json(items);
+	});
+});
+
+app.get('/inbox/before/:beforeDate/after/:afterDate', function(req, res) {
+	db.collection('inbox').find(
+		{'fromNumber': req.params.number}, 
+		{'_id': 0, 'fromNumber': 1, 'payload': 1, 'dateTime': 1})
+	.toArray( (err, items) => {
+		if (err)
+			return response.status(500).json({
+				error : `Error reading database: ${err}`,
+				status : 'failure'
+			});
+
+		response.json(items);
+	});
+});
 /* --JSON data formats-- /*
 
 Incoming JSON blobs should be all like:
@@ -103,7 +116,6 @@ app.post('/incoming', jsonParser, (req, resp) => {
 		});
 
 	if (req.body.type === 'inboundText') {
-		var msgSender = req.body.fromNumber;
 		var msgBlob = getBlobFromJSON(req.body);
 
 		db.collection('inbox').insertOne(msgBlob, (err, r) => {
@@ -130,7 +142,7 @@ function getBlobFromJSON(jsonTxt) {
 	var timestamp = Date.now();
 	var fmtDateTime = moment(timestamp).format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
 	var returnBlob = {
-		fromNumber : jsonTxt.fromNumber,
+		fromNumber : jsonTxt.fromNumber.replace(/\D/g, ''),
 		payload : jsonTxt.payload,
 		timestamp : timestamp,
 		dateTime : fmtDateTime
