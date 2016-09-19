@@ -3,7 +3,7 @@ require('dotenv').config();
 
 var fs = require('fs');
 var path = require('path');
-var moment = require('moment');
+var moment = require('moment-timezone');
 
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -34,13 +34,11 @@ MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
 });
 
 app.get('/', (req, res) => {
-	console.log('redirect...');
 	res.redirect(301, '/readMsg');
 });
 
 app.get('/readMsg', (req, res) => {
 	fs.readFile('readMessages.html', 'utf8', (err, data) => {
-		console.log('Read messages: ' + data.length);
 		if (err)
 			return response.status(500).json({
 				error : `Error reading HTML file: ${err}`,
@@ -160,7 +158,7 @@ app.post('/incoming', jsonParser, (req, resp) => {
 
 function getBlobFromJSON(jsonTxt) {
 	var timestamp = Date.now();
-	var fmtDateTime = moment(timestamp).format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
+	var fmtDateTime = moment(timestamp).tz("America/Menominee").format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
 	var returnBlob = {
 		fromNumber : jsonTxt.fromNumber.replace(/\D/g, ''),
 		payload : jsonTxt.payload,
