@@ -15,6 +15,7 @@ var MongoClient = mongodb.MongoClient;
 
 var db;
 
+
 MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
   if (err) {
     console.log(err);
@@ -32,12 +33,22 @@ MongoClient.connect(process.env.MONGODB_URI, function (err, database) {
   });
 });
 
-
-app.set('port', process.env.PORT || 10101);
-
 app.get('/', (req, res) => {
 	console.log('redirect...');
-	res.redirect(301, '/inbox');
+	res.redirect(301, '/readMsg');
+});
+
+app.get('/readMsg', (req, res) => {
+	fs.readFile('readMessages.html', 'utf8', (err, data) => {
+		console.log('Read messages: ' + data.length);
+		if (err)
+			return response.status(500).json({
+				error : `Error reading HTML file: ${err}`,
+				status : 'failure'
+			});
+			
+		res.send(data);
+	});	
 });
 
 app.get('/inbox', function (request, response) {
@@ -55,7 +66,7 @@ app.get('/inbox', function (request, response) {
 app.get('/inbox/from/:number', function(req, res) {
 	db.collection('inbox').find(
 		{'fromNumber': req.params.number}, 
-		{'_id': 0, 'fromNumber': 1, 'payload': 1, 'dateTime': 1})
+		{'fromNumber': 1, 'payload': 1, 'dateTime': 1})
 	.toArray( (err, items) => {
 		if (err)
 			return response.status(500).json({
@@ -115,7 +126,16 @@ app.post('/incoming', jsonParser, (req, resp) => {
 			status : 'failure'
 		});
 
-	if (req.body.type === 'inboundText') {
+	db.collection('rawPackets').insertOne(req.body, (err, r) => {
+		if(err || r.insertedCount !== 1)
+			return resp.status(500).json({
+				error: err || 'unable to insert packet data into [rawPackets]',
+				status: 'failure'
+			})
+		
+	});
+		
+	//if (req.body.type === 'inboundText') {
 		var msgBlob = getBlobFromJSON(req.body);
 
 		db.collection('inbox').insertOne(msgBlob, (err, r) => {
@@ -130,12 +150,12 @@ app.post('/incoming', jsonParser, (req, resp) => {
 				resultData : r
 			});
 		});
-	} else {
-		return resp.status(401).json({
-			error : `error: invalid data`,
-			status : 'failure'
-		});
-	}
+	//} else {
+	//	return resp.status(401).json({
+	//		error : `error: invalid data`,
+	//		status : 'failure'
+	//	});
+	//}
 });
 
 function getBlobFromJSON(jsonTxt) {

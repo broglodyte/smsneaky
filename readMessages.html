@@ -1,0 +1,26 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+<head>
+    <title>Read Messages</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.js">
+</script> <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js">
+</script> <script>
+$( function() {
+		$( "#accordion" ).accordion({
+			collapsible: true
+		});
+    } );
+
+    $(document).ready( function() {
+		$.getJSON("/inbox", function(result) {
+			$("#jsonResult").html("<pre><code>"+JSON.stringify(result, null, 4)+"</code></pre>")
+		});
+    });
+    </script>
+</head>
+
+<body>
+	<div id="jsonResult"></div>
+</body>
+</html>
