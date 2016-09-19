@@ -158,7 +158,7 @@ app.post('/incoming', jsonParser, (req, resp) => {
 
 function getBlobFromJSON(jsonTxt) {
 	var timestamp = Date.now();
-	var fmtDateTime = moment(timestamp).tz("America/Menominee").format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
+	var fmtDateTime = moment(timestamp).tz("America/Los_Angeles").format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
 	var returnBlob = {
 		fromNumber : jsonTxt.fromNumber.replace(/\D/g, ''),
 		payload : jsonTxt.payload,
