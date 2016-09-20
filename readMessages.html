@@ -7,20 +7,26 @@
 </script> <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js">
 </script> <script>
 $( function() {
-		$( "#accordion" ).accordion({
-			collapsible: true
-		});
-    } );
+	$( "#accordion" ).accordion({
+		collapsible: true
+	});
+} );
 
-    $(document).ready( function() {
-		$.getJSON("/inbox", function(result) {
-			$("#jsonResult").html("<pre><code>"+JSON.stringify(result, null, 4)+"</code></pre>")
-		});
-    });
+var rawJSONdata = '';
+var msgDict = {};
+
+$(document).ready( function() {
+	$.getJSON("/inbox", function(result) {
+		rawJSONdata = result;
+	});
+});
     </script>
 </head>
 
 <body>
-	<div id="jsonResult"></div>
+	<div id="listView">
+	
+	
+	</div>
 </body>
 </html>

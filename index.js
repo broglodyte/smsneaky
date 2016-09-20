@@ -40,7 +40,7 @@ app.get('/', (req, res) => {
 app.get('/readMsg', (req, res) => {
 	fs.readFile('readMessages.html', 'utf8', (err, data) => {
 		if (err)
-			return response.status(500).json({
+			return res.status(500).json({
 				error : `Error reading HTML file: ${err}`,
 				status : 'failure'
 			});
@@ -49,30 +49,30 @@ app.get('/readMsg', (req, res) => {
 	});	
 });
 
-app.get('/inbox', function (request, response) {
+app.get('/inbox', function (req, res) {
 	db.collection('inbox').find({}).toArray((err, items) => {
 		if (err)
-			return response.status(500).json({
+			return res.status(500).json({
 				error : `Error reading database: ${err}`,
 				status : 'failure'
 			});
 
-		response.json(items);
+		res.json(items);
 	});
 });
 
 app.get('/inbox/from/:number', function(req, res) {
 	db.collection('inbox').find(
 		{'fromNumber': req.params.number}, 
-		{'fromNumber': 1, 'payload': 1, 'dateTime': 1})
+		{'fromNumber': 1, 'payload': 1, 'timestamp': 1, 'dateTime': 1})
 	.toArray( (err, items) => {
 		if (err)
-			return response.status(500).json({
+			return res.status(500).json({
 				error : `Error reading database: ${err}`,
 				status : 'failure'
 			});
 
-		response.json(items);
+		res.json(items);
 	});
 });
 
@@ -82,12 +82,12 @@ app.get('/inbox/before/:beforeDate/after/:afterDate', function(req, res) {
 		{'_id': 0, 'fromNumber': 1, 'payload': 1, 'dateTime': 1})
 	.toArray( (err, items) => {
 		if (err)
-			return response.status(500).json({
+			return res.status(500).json({
 				error : `Error reading database: ${err}`,
 				status : 'failure'
 			});
 
-		response.json(items);
+		res.json(items);
 	});
 });
 /* --JSON data formats-- /*
@@ -117,16 +117,16 @@ msgBlobs should be like so:	{
 
  */
 
-app.post('/incoming', jsonParser, (req, resp) => {
+app.post('/incoming', jsonParser, (req, res) => {
 	if (!req.body || !req.body.type)
-		return resp.status(400).json({
+		return res.status(400).json({
 			error : 'invalid data',
 			status : 'failure'
 		});
 
 	db.collection('rawPackets').insertOne(req.body, (err, r) => {
 		if(err || r.insertedCount !== 1)
-			return resp.status(500).json({
+			return res.status(500).json({
 				error: err || 'unable to insert packet data into [rawPackets]',
 				status: 'failure'
 			})
@@ -138,18 +138,18 @@ app.post('/incoming', jsonParser, (req, resp) => {
 
 		db.collection('inbox').insertOne(msgBlob, (err, r) => {
 			if (err || r.insertedCount !== 1)
-				return resp.status(500).json({
+				return res.status(500).json({
 					error : err || `[insertedCount (${r.insertedCount}) not equal to 1]`,
 					status : 'failure'
 				});
 
-			return resp.status(201).json({
+			return res.status(201).json({
 				status : 'success',
 				resultData : r
 			});
 		});
 	//} else {
-	//	return resp.status(401).json({
+	//	return res.status(401).json({
 	//		error : `error: invalid data`,
 	//		status : 'failure'
 	//	});
@@ -158,7 +158,7 @@ app.post('/incoming', jsonParser, (req, resp) => {
 
 function getBlobFromJSON(jsonTxt) {
 	var timestamp = Date.now();
-	var fmtDateTime = moment(timestamp).tz("America/Los_Angeles").format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
+	var fmtDateTime = moment(timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
 	var returnBlob = {
 		fromNumber : jsonTxt.fromNumber.replace(/\D/g, ''),
 		payload : jsonTxt.payload,
