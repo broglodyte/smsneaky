@@ -40,10 +40,7 @@ app.get('/', (req, res) => {
 app.get('/readMsg', (req, res) => {
 	fs.readFile('readMessages.html', 'utf8', (err, data) => {
 		if (err)
-			return res.status(500).json({
-				error : `Error reading HTML file: ${err}`,
-				status : 'failure'
-			});
+			res.status(500).send(`Unable to load page: ${err.message}\n\n${err.stack}`);
 			
 		res.send(data);
 	});	
@@ -52,12 +49,9 @@ app.get('/readMsg', (req, res) => {
 app.get('/inbox', function (req, res) {
 	db.collection('inbox').find({}).toArray((err, items) => {
 		if (err)
-			return res.status(500).json({
-				error : `Error reading database: ${err}`,
-				status : 'failure'
-			});
-
-		res.json(items);
+			return handleResponse(500, err, res);
+		
+		return handleResponse(200, items, res);
 	});
 });
 
@@ -67,29 +61,13 @@ app.get('/inbox/from/:number', function(req, res) {
 		{'fromNumber': 1, 'payload': 1, 'timestamp': 1, 'dateTime': 1})
 	.toArray( (err, items) => {
 		if (err)
-			return res.status(500).json({
-				error : `Error reading database: ${err}`,
-				status : 'failure'
-			});
+			return handleResponse(500, err, res);
 
-		res.json(items);
+		return handleResponse(200, items, res);
 	});
 });
 
-app.get('/inbox/before/:beforeDate/after/:afterDate', function(req, res) {
-	db.collection('inbox').find(
-		{'fromNumber': req.params.number}, 
-		{'_id': 0, 'fromNumber': 1, 'payload': 1, 'dateTime': 1})
-	.toArray( (err, items) => {
-		if (err)
-			return res.status(500).json({
-				error : `Error reading database: ${err}`,
-				status : 'failure'
-			});
 
-		res.json(items);
-	});
-});
 /* --JSON data formats-- /*
 
 Incoming JSON blobs should be all like:
@@ -117,53 +95,104 @@ msgBlobs should be like so:	{
 
  */
 
+ 
 app.post('/incoming', jsonParser, (req, res) => {
 	if (!req.body || !req.body.type)
-		return res.status(400).json({
-			error : 'invalid data',
-			status : 'failure'
-		});
+		return handleResponse(415, new Error('Invalid JSON request body'), res);
 
+	var pktCollectionResult;
+	var inboxCollectionResult;
+	
 	db.collection('rawPackets').insertOne(req.body, (err, r) => {
 		if(err || r.insertedCount !== 1)
-			return res.status(500).json({
-				error: err || 'unable to insert packet data into [rawPackets]',
-				status: 'failure'
-			})
-		
+			console.log('Error inserting data into [rawPackets]');
+		else
+			console.log('Inserted into [rawPackets]');
 	});
 		
-	//if (req.body.type === 'inboundText') {
-		var msgBlob = getBlobFromJSON(req.body);
+	getBlobFromJSON(req.body, (err, msgBlob) => {
+		if(err)
+			return handleResponse(500, err, res);
 
 		db.collection('inbox').insertOne(msgBlob, (err, r) => {
 			if (err || r.insertedCount !== 1)
-				return res.status(500).json({
-					error : err || `[insertedCount (${r.insertedCount}) not equal to 1]`,
-					status : 'failure'
-				});
+				return handleResponse(500, err || new Error(`[insertedCount (${r.insertedCount}) not equal to 1]`), res);
 
-			return res.status(201).json({
-				status : 'success',
-				resultData : r
-			});
+			return handleResponse(201, r.insertedId, res);
 		});
-	//} else {
-	//	return res.status(401).json({
-	//		error : `error: invalid data`,
-	//		status : 'failure'
-	//	});
-	//}
+	});
+});
+	
+
+app.put('/contacts/:number', (req, res) => {
+	var contactObj = {
+		name	: req.body.name,
+		number	: req.params.number
+	};
+	
+	db.collection('contacts').insertOne(contactObj, (err, r) => {
+		if(err)
+			return handleResponse(500, err, res);
+		
+		return handleResponse(201, r.insertedId, res);
+	});
 });
 
-function getBlobFromJSON(jsonTxt) {
+function getBlobFromJSON(jsonTxt, callback) {
 	var timestamp = Date.now();
 	var fmtDateTime = moment(timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss.SSS A [[]Z[]]");
+		
 	var returnBlob = {
-		fromNumber : jsonTxt.fromNumber.replace(/\D/g, ''),
-		payload : jsonTxt.payload,
-		timestamp : timestamp,
-		dateTime : fmtDateTime
+		sender		: jsonTxt.fromNumber.replace(/\D/g, ''),
+		type		: jsonTxt.type,
+		data		: jsonTxt.payload,
+		timestamp	: timestamp,
+		datetime	: fmtDateTime
 	};
-	return returnBlob;
+	
+	switch (jsonTxt.type) {
+		case "voiceMail":
+		case "inboundMedia":
+			var payloadURL = jsonTxt.payload;
+			http.get(payloadURL, (res) => {
+				var fileData = [];
+				res.setEncoding('binary');
+				
+				res.on('data', (chunk) => {
+					fileData.push(chunk);
+				});
+				
+				res.on('end', () => {
+					console.log(`Downloaded file [${payloadURL}] (${fileData.length} bytes)`);	
+					
+					var binData = Buffer.concat(fileData);
+					var binData_Base64Str = binData.toString('base64');
+					returnBlob.payload = binData_Base64Str;
+					returnBlob.payloadSource = payloadURL;
+				
+					return callback(undefined, returnBlob);
+				});
+				
+				res.on('error', (err) => {
+					return callback(err);
+				});
+				
+			});
+			break;
+		
+		case "inboundText":
+			return callback(undefined, returnBlob);
+			
+		default:
+			return callback(new Error(`Invalid message type [${jsonTxt.type}]`));
+	}
+}
+
+function handleResponse(_code, _data, _response) {
+	var resBlob = {
+		status: _code > 299 ? 'failure' : 'success',
+		result: _data
+	};
+	
+	_response.status(_code).json(resBlob);
 }

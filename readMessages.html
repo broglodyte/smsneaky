@@ -12,19 +12,26 @@ $( function() {
 	});
 } );
 
-var rawJSONdata = '';
 var msgDict = {};
 
 $(document).ready( function() {
 	$.getJSON("/inbox", function(result) {
-		rawJSONdata = result;
+		jsonData = result;
+		
+		$.each(jsonData, (index, message) => {
+			var sender = message.fromNumber || 'Unknown';
+	
+			msgDict[sender] = {
+				type : message.
+			}
+		});
 	});
 });
     </script>
 </head>
 
 <body>
-	<div id="listView">
+	<div id="accordion">
 	
 	
 	</div>
