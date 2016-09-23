@@ -1,6 +1,6 @@
 
 require('dotenv').config();
-
+var util = require('util');
 var fs = require('fs');
 var path = require('path');
 var moment = require('moment-timezone');
@@ -46,54 +46,31 @@ app.get('/readMsg', (req, res) => {
 	});	
 });
 
-app.get('/inbox', function (req, res) {
-	db.collection('inbox').find({}).toArray((err, items) => {
+app.get('/inbox', (req, res) => {
+	db.collection('inbox')
+		.find({})
+		.sort({"timestamp" : -1})
+		.toArray((err, items) => {
+			if (err)
+				return handleResponse(500, err, res);
+			
+			return handleResponse(200, items, res);
+		}
+	);
+});
+
+app.get('/inbox/from/:number', (req, res) => {
+	db.collection('inbox')
+		.find({'fromNumber': req.params.number})
+		.sort({"timestamp" : -1})
+		.toArray( (err, items) => {
 		if (err)
 			return handleResponse(500, err, res);
-		
+
 		return handleResponse(200, items, res);
 	});
 });
 
-app.get('/inbox/from/:number', function(req, res) {
-	db.collection('inbox').find(
-		{'fromNumber': req.params.number}, 
-		{'fromNumber': 1, 'payload': 1, 'timestamp': 1, 'dateTime': 1})
-	.toArray( (err, items) => {
-		if (err)
-			return handleResponse(500, err, res);
-
-		return handleResponse(200, items, res);
-	});
-});
-
-
-/* --JSON data formats-- /*
-
-Incoming JSON blobs should be all like:
-[for now we only care about 'type', 'payload', 'fromNumber', and 'toNumber']	{
-"type" : "inboundText",
-"payload" : "You are now reading a text message from [xyz]",
-"fromNumber" : "+19185559876",
-"toNumber" : "+19182152005",
-"burnerId" : "b06553cc-7630-4061-9d75-8e258a741822",
-"userId" : "0a3d6fb2-9af9-11e4-a7c4-73252e699852-6a68e080"
-}
-
-
-Storage file should be all like:	{
-"+[recipientNumber]": [ {msgBlob1}, {msgBlob2}, {...etc...} ],
-"+1234567890": [ {another list of msgBlobs} ]
-}
-
-msgBlobs should be like so:	{
-"fromNumber" : "[whoever sent the text]",
-"payload"    : "[whatever the text said]"
-"timestamp"  : "[whatever the date/time of arrival is]",
-"dateTime"   : "[formatted date and time, calculated from 'timestamp']"
-}
-
- */
 
  
 app.post('/incoming', jsonParser, (req, res) => {
@@ -136,6 +113,49 @@ app.put('/contacts/:number', (req, res) => {
 		
 		return handleResponse(201, r.insertedId, res);
 	});
+});
+
+app.get('/contacts', (req, res) => {
+	db.collection('contacts')
+		.find({})
+		.sort({'number': 1})
+		.toArray((err, contactList) => {
+			if(err)
+				return handleResponse(500, err, res);
+			
+			handleResponse(200, contactList, res);
+		});
+});
+
+app.get('/contacts/:lookupField/:lookupData', (req, res) => {
+	var lookupField = req.params['lookupField'].toLowerCase();
+	var lookupData = req.params['lookupData'].replace(/\W/g, '').toLowerCase();
+	
+	console.log(`field: ${lookupField}`);
+	console.log(`data:  ${lookupData}`);
+	
+	switch(lookupField) {
+		case 'name': 
+		case 'number':
+			var findObject={};
+			findObject[lookupField] = lookupData;
+			var projObject={};
+			projObject[lookupField] = 0;
+			
+			console.log(`find: ${findObject}`);
+			console.log(util.inspect(findObject));
+			console.log(`proj: ${projObject}`);
+			console.log(util.inspect(projObject));
+			debugger;
+			var contactData = db.collection('contacts').findOne(findObject);	//, projObject);
+			if(!contactData)
+				return handleResponse(404, new Error('Contact not found'), res);
+			
+			return handleResponse(200, contactData, res);
+			
+		default:
+			return handleResponse(400, new Error('Invalid lookup field [${lookupField}]'), res);
+	}
 });
 
 function getBlobFromJSON(jsonTxt, callback) {

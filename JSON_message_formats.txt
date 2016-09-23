@@ -1,0 +1,27 @@
+
+/* --JSON data formats-- /*
+
+Incoming JSON blobs should be all like:
+[for now we only care about 'type', 'payload', 'fromNumber', and 'toNumber']	{
+"type" : "inboundText",
+"payload" : "You are now reading a text message from [xyz]",
+"fromNumber" : "+19185559876",
+"toNumber" : "+19182152005",
+"burnerId" : "b06553cc-7630-4061-9d75-8e258a741822",
+"userId" : "0a3d6fb2-9af9-11e4-a7c4-73252e699852-6a68e080"
+}
+
+
+Storage file should be all like:	{
+"+[recipientNumber]": [ {msgBlob1}, {msgBlob2}, {...etc...} ],
+"+1234567890": [ {another list of msgBlobs} ]
+}
+
+msgBlobs should be like so:	{
+"fromNumber" : "[whoever sent the text]",
+"payload"    : "[whatever the text said]"
+"timestamp"  : "[whatever the date/time of arrival is]",
+"dateTime"   : "[formatted date and time, calculated from 'timestamp']"
+}
+
+ */

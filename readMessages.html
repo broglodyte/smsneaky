@@ -19,11 +19,20 @@ $(document).ready( function() {
 		jsonData = result;
 		
 		$.each(jsonData, (index, message) => {
-			var sender = message.fromNumber || 'Unknown';
-	
-			msgDict[sender] = {
-				type : message.
-			}
+			var sender = message.sender|| 'Unknown';
+			var senderMsgList;
+			
+			if(!msgDict[sender])
+				msgDict[sender] = [];
+			
+			//senderMsgList = msgDict[sender];
+			msgDict[sender].push({
+				_id  : message._id,
+				type : message.type,
+				data : message.data,
+				timestamp : message.timestamp,
+				datetime  : message.datetime
+			});
 		});
 	});
 });
