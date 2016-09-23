@@ -146,12 +146,17 @@ app.get('/contacts/:lookupField/:lookupData', (req, res) => {
 			console.log(util.inspect(findObject));
 			console.log(`proj: ${projObject}`);
 			console.log(util.inspect(projObject));
-			debugger;
-			var contactData = db.collection('contacts').findOne(findObject);	//, projObject);
-			if(!contactData)
-				return handleResponse(404, new Error('Contact not found'), res);
-			
-			return handleResponse(200, contactData, res);
+//			debugger;
+			db.collection('contacts').findOne(findObject, (err, contactData) => {
+				if(err)
+					return handleResponse(500, err, res);
+				
+				if(!contactData)
+					return handleResponse(404, new Error('Contact information not found'), res);
+				
+				handleResponse(200, contactData, res);				
+			});
+			break;
 			
 		default:
 			return handleResponse(400, new Error('Invalid lookup field [${lookupField}]'), res);
@@ -185,18 +190,25 @@ function getBlobFromJSON(jsonTxt, callback) {
 				res.on('end', () => {
 					console.log(`Downloaded file [${payloadURL}] (${fileData.length} bytes)`);	
 					
-					var binData = Buffer.concat(fileData);
-					var binData_Base64Str = binData.toString('base64');
-					returnBlob.payload = binData_Base64Str;
-					returnBlob.payloadSource = payloadURL;
-				
-					return callback(undefined, returnBlob);
+					try {
+						var binData = Buffer.concat(fileData);
+						var binData_Base64Str = binData.toString('base64');
+						returnBlob.payload = binData_Base64Str;
+						returnBlob.payloadSource = payloadURL;
+					
+						return callback(undefined, returnBlob);
+					}
+					catch(err) {
+						return callback(err);
+					}
 				});
 				
 				res.on('error', (err) => {
 					return callback(err);
 				});
 				
+			}).on('error', (err) => {
+					return callback(err);				
 			});
 			break;
 		
