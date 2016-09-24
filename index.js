@@ -92,29 +92,85 @@ app.post('/incoming', jsonParser, (req, res) => {
 			return handleResponse(500, err, res);
 
 		db.collection('inbox').insertOne(msgBlob, (err, r) => {
-			if (err || r.insertedCount !== 1)
-				return handleResponse(500, err || new Error(`[insertedCount (${r.insertedCount}) not equal to 1]`), res);
+			if (err)
+				return handleResponse(500, err, res);
 
-			return handleResponse(201, r.insertedId, res);
+			return handleResponse(201, r, res);
 		});
 	});
 });
-	
 
-app.put('/contacts/:number', (req, res) => {
-	var contactObj = {
-		name	: req.body.name,
-		number	: req.params.number
-	};
-	
-	db.collection('contacts').insertOne(contactObj, (err, r) => {
-		if(err)
-			return handleResponse(500, err, res);
+//	Create new contact entry:
+app.post('/contacts', jsonParser, (req, res) => {
+	if (!req.body)
+		return handleResponse(415, new Error('Invalid JSON body'), res);
+
+	try {
+		var contactObj = {
+			fullName: req.body.fullName,
+			name	: req.body.name.replace(/\W/g, '').toLowerCase(),	//	filter out anything but [a-z,0-9,_]
+			number	: req.body.number.replace(/\D/g, ''),				//	filter out non-digit chars
+		};
 		
-		return handleResponse(201, r.insertedId, res);
-	});
+		if(!contactObj.number || contactObj.number.replace(/\D/g, '') === '')
+			return handleResponse(400, new Error("Required attribute 'number' missing or invalid"), res);
+		
+		if(!contactObj.name || !contactObj.name.replace(/W/g, '') === '')
+			return handleResponse(400, new Error("Required attribute 'name' missing or invalid"), res);
+		
+		if(!contactObj.fullName || contactObj.fullName.trim() === '')
+			contactObj.fullName = contactObj.name;
+		
+		db.collection('contacts').insertOne(contactObj, (err, r) => {
+			if(err)
+				return handleResponse(500, err, res);
+		});
+	}
+	catch (err) {
+		return handleResponse(500, err, res);
+	}
+	
 });
 
+//	Update existing contact entry:
+app.put('/contacts/number/:number', jsonParser, (req, res) => {
+	if (!req.body)
+		return handleResponse(415, new Error('Invalid JSON body'), res);
+
+	try {
+		var contactObj = {
+			fullName: req.body.fullName,
+			name	: req.body.name.replace(/\W/g, '').toLowerCase()
+//			,number	: req.params.number
+		};
+		
+		db.collection('contacts').updateOne(
+			{number:	req.params.number},									//	filter object
+			{$set: {
+					fullName:	req.body.fullName.trim() || req.body.name,		//	update fields
+					name:		req.body.name.replace(/\W/g, '').toLowerCase()
+				}
+			},
+			{upsert: false},
+			(err, r) => {
+				if(err)
+					return handleResponse(418, err, res);
+				
+				res.status(204).location(`/contacts/number/${req.params.number}`).end();				
+			});
+				
+			if(err)
+				return handleResponse(500, err, res);
+			
+			return handleResponse(201, r.insertedId, res);
+		});
+	}
+	catch (err) {
+		return handleResponse(500, err, res);
+	}
+});
+
+//	List all contacts information:
 app.get('/contacts', (req, res) => {
 	db.collection('contacts')
 		.find({})
@@ -127,12 +183,10 @@ app.get('/contacts', (req, res) => {
 		});
 });
 
+//	Lookup specific contact information:
 app.get('/contacts/:lookupField/:lookupData', (req, res) => {
 	var lookupField = req.params['lookupField'].toLowerCase();
 	var lookupData = req.params['lookupData'].replace(/\W/g, '').toLowerCase();
-	
-	console.log(`field: ${lookupField}`);
-	console.log(`data:  ${lookupData}`);
 	
 	switch(lookupField) {
 		case 'name': 
@@ -141,12 +195,7 @@ app.get('/contacts/:lookupField/:lookupData', (req, res) => {
 			findObject[lookupField] = lookupData;
 			var projObject={};
 			projObject[lookupField] = 0;
-			
-			console.log(`find: ${findObject}`);
-			console.log(util.inspect(findObject));
-			console.log(`proj: ${projObject}`);
-			console.log(util.inspect(projObject));
-//			debugger;
+
 			db.collection('contacts').findOne(findObject, (err, contactData) => {
 				if(err)
 					return handleResponse(500, err, res);
@@ -161,6 +210,16 @@ app.get('/contacts/:lookupField/:lookupData', (req, res) => {
 		default:
 			return handleResponse(400, new Error('Invalid lookup field [${lookupField}]'), res);
 	}
+});
+
+app.delete('/contacts/:number', (req, res) => {
+	var delNumber = req.params.number;
+	
+	db.collection('contacts').deleteOne({number: delNumber}, (err, r) => {
+		
+		//	CONTINUE HERE
+		
+	});
 });
 
 function getBlobFromJSON(jsonTxt, callback) {
