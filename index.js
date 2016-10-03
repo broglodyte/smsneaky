@@ -1,17 +1,20 @@
 
+
 const routeMessages = true;
 const routeContacts = true;
 
-require('dotenv').config();
+// require('dotenv').config();
 var util = require('util');
 var fs = require('fs');
 var path = require('path');
 var moment = require('moment-timezone');
 
 var express = require('express');
-// var bodyParser = require('body-parser');
 var jsonParser = require('body-parser').json();
 
+var SparkPost = require('sparkpost');
+console.log("API Key: " + process.env.SPARKPOST_API_KEY);
+var sparky = new SparkPost(process.env.SPARKPOST_API_KEY);
 var app = express();
 
 var mongodb = require('mongodb');
@@ -36,20 +39,31 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	});
 });
 
-app.get('/r', (req, res) => {
+app.get('/', (req, res) => {
 	res.redirect(301, '/readMsg');
 });
 
-app.get('/', (req, res) => {
+app.get('/i', (req, res) => {
 	res.redirect(301, '/inbox');
 });
 
 
 if(routeMessages) {
+	app.get('/main.css', (req, res) => {
+		// var cssPath = path.join(__dirname, 'main.css'),
+			
+		fs.readFile('main.css', (err, data) => {
+			if(err)
+				res.status(500).json(err);
+			
+			res.send(data);
+		});
+	});
+
 	app.get('/readMsg', (req, res) => {
 		fs.readFile('readMessages.html', 'utf8', (err, data) => {
 			if (err)
-				res.status(500).send(`Unable to load page: ${err.message}\n\n${err.stack}`);
+				res.status(500).send(err);
 				
 			res.send(data);
 		});	
@@ -69,9 +83,20 @@ if(routeMessages) {
 				if (err)
 					return res.status(500).json(err);
 				
-				return res.status(200).json(items);
+				return res.json(items);
 			}
 		);
+	});
+	
+	app.get('/inbox/from', (req, res) => {
+		db.collection('inbox')
+			.distinct("sender", (err, data) => {
+				if(err)
+					return res.status(500).json(err);
+				else
+					return res.status(200).json(data);
+			});
+		
 	});
 
 	app.get('/inbox/from/:number', (req, res) => {
@@ -135,7 +160,26 @@ if(routeMessages) {
 	app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
 		var pktCollectionResult;
 		var inboxCollectionResult;
-					
+
+	sparky.transmissions.send({
+	transmissionBody: {
+	content: {
+		from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN, // 'testing@sparkpostbox.com'
+		  subject: 'DEBUG MSG ',
+		  html:'<html><body><p>Msg Event 0x435asd9</p></body></html>'
+		},
+		recipients: [
+		  {address: 'broginator@icloud.com'}
+		]
+	  }
+	}, function(err, res) {
+	  if (err) {
+		console.log('Whoops! Something went wrong');
+		console.log(err);
+	  } else {
+		console.log('Email sent!');
+	  }
+	});	
 			//	TODO: refactor this as a route, like formatContactInfoJSON
 		// getBlobFromJSON(req.body, (err, msgBlob) => {
 			// if(err)
@@ -203,23 +247,23 @@ if(routeContacts) {
 			
 			if(gotIssues.length)
 				res.status(400).json({errorList: gotIssues});
-			else {
-				if(Object.keys(upBlob).length > 0) {
-					db.collection('contacts').updateOne(
-						{number	: req.params.number},	//	filter object
-						{$set	: upBlob},				//	update object
-						{upsert	: false},				//	error if doesn't exist
-						(err, r) => {
-							if(err)
-								return res.status(418).json(err);
-							debugger;
-							return res.status(204).location(`/contacts/number/${req.params.number}`).end();
-						});
-				}
-				else {
+			else
+				if(Object.keys(upBlob).length > 0)
+					db
+						.collection('contacts')
+						.updateOne(
+							{number	: req.params.number},	//	filter object
+							{$set	: upBlob},				//	update object
+							{upsert	: false},				//	error if doesn't exist
+							(err, r) => {
+								if(err)
+									return res.status(418).json(err);
+
+								return res.status(204).location(`/contacts/number/${req.params.number}`).end();
+							}
+						);
+				else 
 					res.status(418).json({error: 'No valid data fields found in request'});
-				}
-			}
 		}
 		catch (err) {
 			return res.status(500).json(err);
@@ -269,6 +313,7 @@ if(routeContacts) {
 	
 	function mapContact(c) {
 		c.url = `/contacts/${c.number}`;
+		c.senderListUrl = `/inbox/${c.number}`;
 		return c;
 	}
 }
