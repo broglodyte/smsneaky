@@ -1,4 +1,5 @@
 
+
 const routeMessages = true;
 const routeContacts = true;
 
@@ -43,15 +44,19 @@ app.get('/i', (req, res) => {
 	res.redirect(301, '/inbox');
 });
 
-app.get('/css/:main', (req, res) => {
-	var options = {
-		cssPath = path.join(__dirname, `${req.params.main}.css`);
-		
-	}
-});
-
 
 if(routeMessages) {
+	app.get('/main.css', (req, res) => {
+		// var cssPath = path.join(__dirname, 'main.css'),
+			
+		fs.readFile('main.css', (err, data) => {
+			if(err)
+				res.status(500).json(err);
+			
+			res.send(data);
+		});
+	});
+
 	app.get('/readMsg', (req, res) => {
 		fs.readFile('readMessages.html', 'utf8', (err, data) => {
 			if (err)
@@ -75,13 +80,19 @@ if(routeMessages) {
 				if (err)
 					return res.status(500).json(err);
 				
-				return res.status(200).json(items);
+				return res.json(items);
 			}
 		);
 	});
 	
 	app.get('/inbox/from', (req, res) => {
-		
+		db.collection('inbox')
+			.distinct("sender", (err, data) => {
+				if(err)
+					return res.status(500).json(err);
+				else
+					return res.status(200).json(data);
+			});
 		
 	});
 
