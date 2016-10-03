@@ -9,7 +9,6 @@ var path = require('path');
 var moment = require('moment-timezone');
 
 var express = require('express');
-// var bodyParser = require('body-parser');
 var jsonParser = require('body-parser').json();
 
 var app = express();
@@ -36,12 +35,19 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	});
 });
 
-app.get('/r', (req, res) => {
+app.get('/', (req, res) => {
 	res.redirect(301, '/readMsg');
 });
 
-app.get('/', (req, res) => {
+app.get('/i', (req, res) => {
 	res.redirect(301, '/inbox');
+});
+
+app.get('/css/:main', (req, res) => {
+	var options = {
+		cssPath = path.join(__dirname, `${req.params.main}.css`);
+		
+	}
 });
 
 
@@ -49,7 +55,7 @@ if(routeMessages) {
 	app.get('/readMsg', (req, res) => {
 		fs.readFile('readMessages.html', 'utf8', (err, data) => {
 			if (err)
-				res.status(500).send(`Unable to load page: ${err.message}\n\n${err.stack}`);
+				res.status(500).send(err);
 				
 			res.send(data);
 		});	
@@ -72,6 +78,11 @@ if(routeMessages) {
 				return res.status(200).json(items);
 			}
 		);
+	});
+	
+	app.get('/inbox/from', (req, res) => {
+		
+		
 	});
 
 	app.get('/inbox/from/:number', (req, res) => {
@@ -203,23 +214,23 @@ if(routeContacts) {
 			
 			if(gotIssues.length)
 				res.status(400).json({errorList: gotIssues});
-			else {
-				if(Object.keys(upBlob).length > 0) {
-					db.collection('contacts').updateOne(
-						{number	: req.params.number},	//	filter object
-						{$set	: upBlob},				//	update object
-						{upsert	: false},				//	error if doesn't exist
-						(err, r) => {
-							if(err)
-								return res.status(418).json(err);
-							debugger;
-							return res.status(204).location(`/contacts/number/${req.params.number}`).end();
-						});
-				}
-				else {
+			else
+				if(Object.keys(upBlob).length > 0)
+					db
+						.collection('contacts')
+						.updateOne(
+							{number	: req.params.number},	//	filter object
+							{$set	: upBlob},				//	update object
+							{upsert	: false},				//	error if doesn't exist
+							(err, r) => {
+								if(err)
+									return res.status(418).json(err);
+
+								return res.status(204).location(`/contacts/number/${req.params.number}`).end();
+							}
+						);
+				else 
 					res.status(418).json({error: 'No valid data fields found in request'});
-				}
-			}
 		}
 		catch (err) {
 			return res.status(500).json(err);
@@ -269,6 +280,7 @@ if(routeContacts) {
 	
 	function mapContact(c) {
 		c.url = `/contacts/${c.number}`;
+		c.senderListUrl = `/inbox/${c.number}`;
 		return c;
 	}
 }

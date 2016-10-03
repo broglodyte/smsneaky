@@ -10,10 +10,10 @@
   "dependencies": {
     "body-parser": "^1.15.2",
     "dotenv": "^2.0.0",
-    "ejs": "2.4.1",
     "express": "4.13.3",
     "moment-timezone": "^0.5.5",
-    "mongodb": "^2.2.10"
+    "mongodb": "^2.2.10",
+    "sendmail": "^1.0.0"
   },
   "repository": {
     "type": "git",
@@ -23,7 +23,7 @@
     "sms",
     "text",
     "api",
-	"burner"
+    "burner"
   ],
   "author": "broglodyte",
   "license": "MIT",

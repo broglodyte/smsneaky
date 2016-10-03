@@ -3,59 +3,82 @@
 <html>
 <head>
     <title>Read Messages</title>
-    <script src="https://code.jquery.com/jquery-1.12.4.js">
-</script> <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js">
-</script> <script>
-$( function() {
-	$( "#accordion" ).accordion({
-		collapsible: true
-	});
-} );
+	<link rel="stylesheet" href="/css/main.css">
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	<script>
+	
+$(document).ready(function(){
+    $("button").click(function(){
+        $("div").animate({
+            left: '250px',
+            opacity: '0.5',
+            height: '150px',
+            width: '150px'
+        });
+    });
+});
 
 var msgDict = {};
 var senderList = [];
 
-$(document).ready( function() {
+$(document).ready( initTextList );
+
+function initTextList() {
 	$.getJSON("/inbox", function(result) {
 		if(result) {
 			jsonData = result;
 			
 			$.each(jsonData, (index, message) => {
 				var sender = message.sender || 'Unknown';
-				var senderMsgList;
-				
-				if(!msgDict[sender])
-					msgDict[sender] = [];
-				
-				if(senderList.indexOf(sender) === -1)
-					senderList.push(sender);
-				
-				//senderMsgList = msgDict[sender];
-				msgDict[sender].push(message);
+				var senderMsgList = msgDict[sender] || [];
+								
+				senderMsgList.push(message);
+				msgDict[sender] = senderMsgList;
 			});
 			
-			for (senderKey in msgDict) {
+			$.each(msgDict, (key, value) => {
+				console.log(`key:${key} = value:${value}`);
+			});	
+/*			
 				var msgHtml = $('<H2></H2>').text(senderKey);
 				var msgList = msgDict[senderKey].sort((a,b) => {return a.timestamp<b.timestamp?-1:1});
 				$("div#accordion").append(msgHtml);
 				
 				for(msgBlob in msgList) {
 					var message = document.createElement("div");
-					message.innerHTML = `<p class="datetime">${msgBlob.datetime}</p>\n<p class="msgText">${msgBlob.payload}</p>\n<hr>\n\n`;
-					$("div#asccordion").append(message);
-				}
-			}
+					message.innerHTML = `<p class="datetime">${msgBlob.datetime}</p>\n<p class="msgText">${msgBlob.payload}</p>\n<hr>\n\n
+				} 
+			}     */
 			
 		}
 	});
-});
+}
     </script>
 </head>
 
 <body>
-	<div id="accordion">
-	
-	
+
+<div class="mainHolder">
+<!-- 
+	<div class="senderHolder" id="header_$SENDER">
+		<h3>$SENDER</h3>
+	</div>  -->
+	<div class="MessageList" id="div_$SENDER">
+
+		<table id="msgTbl_$SENDER">
+			<tr>
+				<th onclick="toggleMessageList()" colspan="2">$SENDER</th>
+			</tr>
+			<tr class="msgRow" id="msgRow_$MSG[$I].ID">
+				<td class="timeColumn">$MSG[$i].DATETIME</td>
+				<td class="dataColumn">$MSG[$i].DATA</td>
+			</tr>
+		</table>
+
 	</div>
+</div>
+
 </body>
 </html>
