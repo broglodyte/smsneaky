@@ -3,19 +3,21 @@
 const routeMessages = true;
 const routeContacts = true;
 
-// require('dotenv').config();
+require('dotenv').config();
 var util = require('util');
 var fs = require('fs');
 var path = require('path');
 var moment = require('moment-timezone');
 
 var express = require('express');
+var favicon = require('serve-favicon');
 var jsonParser = require('body-parser').json();
 
 var SparkPost = require('sparkpost');
 console.log("API Key: " + process.env.SPARKPOST_API_KEY);
 var sparky = new SparkPost(process.env.SPARKPOST_API_KEY);
 var app = express();
+app.use(favicon(__dirname + '/public/favicon.ico'));
 
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
@@ -39,11 +41,11 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	});
 });
 
-app.get('/', (req, res) => {
+app.get('/r', (req, res) => {
 	res.redirect(301, '/readMsg');
 });
 
-app.get('/i', (req, res) => {
+app.get('/', (req, res) => {
 	res.redirect(301, '/inbox');
 });
 
@@ -88,13 +90,13 @@ if(routeMessages) {
 		);
 	});
 	
-	app.get('/inbox/from', (req, res) => {
+	app.get('/inbox/senders', (req, res) => {
 		db.collection('inbox')
 			.distinct("sender", (err, data) => {
 				if(err)
 					return res.status(500).json(err);
-				else
-					return res.status(200).json(data);
+
+				return res.status(200).json(data);
 			});
 		
 	});
