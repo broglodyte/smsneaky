@@ -41,12 +41,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	});
 });
 
-app.get('/r', (req, res) => {
-	res.redirect(301, '/readMsg');
-});
 
 app.get('/', (req, res) => {
 	res.redirect(301, '/inbox');
+});
+app.get('/r', (req, res) => {
+	res.redirect(301, '/readMsg');
 });
 
 
