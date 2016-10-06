@@ -26,21 +26,29 @@ var senderList = [];
 $(document).ready( initTextList );
 
 function initTextList() {
-	$.getJSON("/inbox", function(result) {
-		if(result) {
-			jsonData = result;
+	$.getJSON("/inbox/from", function(fromList) {
+		if(fromList && fromList.length) {
+//			jsonData = result;
 			
-			$.each(jsonData, (index, message) => {
-				var sender = message.sender || 'Unknown';
-				var senderMsgList = msgDict[sender] || [];
-								
+			$.each(resultList, (index, fromNumber) => {
+				$.getJSON(`/contacts/${fromNumber}`, function(fromObj) {
+					var fromName = "Unknown";
+					if(fromObj)
+						fromName = fromObj.fullName || fromObj.name || fromNumber;
+					
+					$.getJSON(`/inbox/from/${fromNumber}`, function(msgListFromNumber) {
+						
+						
+					});
+				});
+					
 				senderMsgList.push(message);
 				msgDict[sender] = senderMsgList;
 			});
 			
-			$.each(msgDict, (key, value) => {
-				console.log(`key:${key} = value:${value}`);
-			});	
+//			$.each(msgDict, (key, value) => {
+//				console.log(`key:${key} = value:${value}`);
+//			});	
 /*			
 				var msgHtml = $('<H2></H2>').text(senderKey);
 				var msgList = msgDict[senderKey].sort((a,b) => {return a.timestamp<b.timestamp?-1:1});

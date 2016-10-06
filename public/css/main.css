@@ -1,37 +1,21 @@
 
 
-<<<<<<< HEAD
-#senderTable {
-=======
 #MessageList {
->>>>>>> e78a21f9f9ede4313c42416072c78eb70c7484e0
     font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
     border-collapse: collapse;
     width: 100%;
 }
 
-<<<<<<< HEAD
-#senderTable td, #senderTable th {
-=======
 #MessageList td, #MessageList th {
->>>>>>> e78a21f9f9ede4313c42416072c78eb70c7484e0
     border: 1px solid #ddd;
     padding: 8px;
 }
 
-<<<<<<< HEAD
-#senderTable tr:nth-child(even){background-color: #f2f2f2;}
-
-#senderTable tr:hover {background-color: #ddd;}
-
-#senderTable th {
-=======
 #MessageList tr:nth-child(even){background-color: #f2f2f2;}
 
 #MessageList tr:hover {background-color: #ddd;}
 
 #MessageList th {
->>>>>>> e78a21f9f9ede4313c42416072c78eb70c7484e0
     padding-top: 12px;
     padding-bottom: 12px;
     text-align: left;
