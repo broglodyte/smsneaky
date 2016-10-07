@@ -13,6 +13,8 @@ const crypto = require('crypto');
 var express = require('express');
 var jsonParser = require('body-parser').json();
 
+var simpleAuth = require('./auth').simpleAuth;
+
 // var SparkPost = require('sparkpost');
 // console.log("API Key: " + process.env.SPARKPOST_API_KEY);
 // var sparky = new SparkPost(process.env.SPARKPOST_API_KEY);
@@ -34,33 +36,33 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	db = database;
 	console.log("Database connection ready");
 
-	var passport = require('passport');
-	var Strategy = require('passport-http').BasicStrategy;
-	
-	passport.use(new Strategy({realm: 'Inbox'}
-		(username, password, callback) => {
-			const sha1 = crypto.createHash('sha1');
-			sha1.update(password);
-			sha1.update(':bitches');
-			var passDigest = sha1.digest('base64');
-			db.collection('auth_users')
-				.findOne(
-				{
-					user: username,
-					pass: passDigest
-				}, (err, userObj) => {
-					if(err) return callback(err);
-					if(!userObj) return callback(null, false);					
-					return callback(null, userObj);					
-				}
-			);
-		}
-	));
+//	var passport = require('passport');
+//	var Strategy = require('passport-http').BasicStrategy;
+//	
+//	passport.use(new Strategy({realm: 'Inbox'},
+//		(username, password, callback) => {
+//			const sha1 = crypto.createHash('sha1');
+//			sha1.update(password);
+//			sha1.update(':bitches');
+//			var passDigest = sha1.digest('base64');
+//			db.collection('auth_users')
+//				.findOne(
+//				{
+//					user: username,
+//					pass: passDigest
+//				}, (err, userObj) => {
+//					if(err) return callback(err);
+//					if(!userObj) return callback(null, false);					
+//					return callback(null, userObj);					
+//				}
+//			);
+//		}
+//	));
 	
 	app.use(express.static('public'));
 	
-	console.log('Password [Basic] authentication enabled');
-	app.use(passport.authenticate('basic', { session: false }));
+//	console.log('Password [Basic] authentication enabled');
+//	app.use(passport.authenticate('basic', { session: false }));
 	
 	app.get('/readMsg', (req, res) => {
 		fs.readFile('readMessages.html', 'utf8', (err, data) => {
@@ -70,9 +72,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			res.send(data);
 		});	
 	});
-	
+
+	/* /// INBOX REQUESTS /// */
 	if(routeMessages) {
-		app.get('/inbox', (req, res) => {
+		app.all('/inbox/*', simpleAuth);
+		
+		app.get('/inbox', simpleAuth, (req, res) => {
 			db.collection('inbox')
 				.find({})
 				.map(mapMsg)
@@ -86,7 +91,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			);
 		});
 		
-		app.get('/inbox/from', (req, res) => {
+		app.get('/inbox/from', simpleAuth, (req, res) => {
 			db.collection('inbox')
 				.distinct("sender", (err, data) => {
 					if(err)
@@ -97,7 +102,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			
 		});
 
-		app.get('/inbox/from/:number', (req, res) => {
+		app.get('/inbox/from/:number', simpleAuth, (req, res) => {
 			db.collection('inbox')
 				.find({'fromNumber': req.params.number})
 				.map(mapMsg)
@@ -111,7 +116,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			);
 		});
 		
-		app.get('/inbox/msg/:msgID', (req, res) => {
+		app.get('/inbox/msg/:msgID', simpleAuth, (req, res) => {
 			db.collection('inbox')
 				.findOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, msg) => {
@@ -126,7 +131,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			);
 		});
 		
-		app.delete('/inbox/msg/:msgID', (req, res) => {
+		app.delete('/inbox/msg/:msgID', simpleAuth, (req, res) => {
 			db.collection('inbox')
 				.deleteOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, r) => {
@@ -139,7 +144,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			});
 		});
 		
-		app.put('/inbox/msg/:msgID', (req, res) => {
+		app.put('/inbox/msg/:msgID', simpleAuth, (req, res) => {
 			db.collection('inbox')
 				.updateOne(
 					{_id	: new mongodb.ObjectID(req.params.msgID)},	//	filter object
@@ -193,10 +198,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			return m;
 		}
 	}
-	
+
+	/* /// CONTACTS REQUESTS /// */
 	if(routeContacts) {
+		
 		//	Create new contact entry:
-		app.post('/contacts', [jsonParser, formatContactInfoJSON], (req, res) => {
+		app.post('/contacts', simpleAuth, [jsonParser, formatContactInfoJSON], (req, res) => {
 			try {
 				db.collection('contacts').insertOne(req.json, (err, r) => {
 					if(err)
@@ -211,7 +218,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Update existing contact entry:
-		app.put('/contacts/:number', jsonParser, (req, res) => {
+		app.put('/contacts/:number', simpleAuth, jsonParser, (req, res) => {
 			if (!req.body)
 				return res.status(415).json(new Error('Invalid JSON request body'));
 			
@@ -263,7 +270,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	List all contacts information:
-		app.get('/contacts', (req, res) => {
+		app.get('/contacts', simpleAuth, (req, res) => {
 			db.collection('contacts')
 				.find({})
 				.map(mapContact)
@@ -277,7 +284,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Retrieve contact entry
-		app.get('/contacts/:contact', (req, res) => {
+		app.get('/contacts/:contact', simpleAuth, (req, res) => {
 			var searchField = /^\d+$/.test(req.params.contact) ? 'number' : 'name';
 			var searchObj = {};
 			searchObj[searchField] = req.params.contact;
@@ -293,7 +300,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Delete contact
-		app.delete('/contacts/:contact', (req, res) => {
+		app.delete('/contacts/:contact', simpleAuth, (req, res) => {
 			var searchField = /^\d+$/.test(req.params.contact) ? 'number' : 'name';
 			var searchObj = {};
 			searchObj[searchField] = req.params.contact;
@@ -318,30 +325,14 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	});
 });
 
-app.get('/r', (req, res) => {
-	res.redirect(301, '/readMsg');
-});
+//app.get('/r', (req, res) => {
+//	res.redirect(301, '/readMsg');
+//});
 
 app.get('/', (req, res) => {
 	res.redirect(301, '/inbox');
 });
 
-
-if(routeMessages) {
-//	app.get('/main.css', (req, res) => {
-//		// var cssPath = path.join(__dirname, 'main.css'),
-//			
-//		fs.readFile('main.css', (err, data) => {
-//			if(err)
-//				res.status(500).json(err);
-//			
-//			res.send(data);
-//		});
-//	});
-
-}
-
-//	/contacts/ URI routing logic:
 
 
 function formatIncomingMessageJSON(req, res, next) {
@@ -364,7 +355,8 @@ function formatIncomingMessageJSON(req, res, next) {
 		type		: jsonTxt.type,
 		data		: jsonTxt.payload,
 		timestamp	: timestamp,
-		readFile	: false,
+		readFlag	: false,
+		newFlag		: true,
 		externalSrc	: jsonTxt.type !== 'inboundText'
 	};
 	

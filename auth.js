@@ -1,9 +1,10 @@
 //auth.js
 
 const getHashFn = require('crypto').createHash;	//.bind(undefined, 'sha1');
-
-module.exports = function(db) {
-	
+var db;
+ 
+module.exports = function(_db) {
+	db = _db;
 	var authFn = function(req, res, next) {
 		
 		var authKeyHeader = req.get("Authorization");
@@ -37,8 +38,8 @@ module.exports = function(db) {
 		}
 		
 		function accessDenied(_err) {
-			console.log('Access denied!')
-			res.status(403).json(_err)
+			console.log('Access denied!');
+			res.status(403).json(_err);
 		}
 		
 		function accessGranted(_authToken) {			
@@ -47,10 +48,27 @@ module.exports = function(db) {
 		
 		function generateAuthToken(_user, _hash) {
 			var timestamp = `${_user}_${_hash}_${Date.now().toString(16)}`;
-			var authToken = getHashFn('sha512').update(timeStamp).digest(''
+			var authToken = getHashFn('sha512').update(timeStamp).digest('hex');
+			return authToken;
 		}
 	}
 	
 	
 	return authFn;
+};
+
+module.exports.simpleAuth = function(req, res, next) {
+	console.log(`SimpleAuth: ${req.method} ${req.url}`);
+	var headerName = 'X-AuthSecret';
+	var authSecret_expected = "secret";
+	var authSecret_client = req.get(headerName);
+		
+	if(authSecret_client !== authSecret_expected) {
+		console.log(` > ACCESS DENIED (${authSecret_client})`);
+		res.status(403).json({error: true, errorMessage: "Invalid authorization"});
+	}
+	else {
+		console.log(" > ACCESS GRANTED ^_^");
+		next();
+	}
 };
