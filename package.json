@@ -11,6 +11,7 @@
     "body-parser": "^1.15.2",
     "dotenv": "^2.0.0",
     "express": "4.13.3",
+    "http-auth": "^2.4.10",
     "moment-timezone": "^0.5.5",
     "mongodb": "^2.2.10",
     "passport": "^0.3.2",

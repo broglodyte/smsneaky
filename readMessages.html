@@ -36,6 +36,12 @@ function initTextList() {
 					if(fromObj)
 						fromName = fromObj.fullName || fromObj.name || fromNumber;
 					
+					var senderHeaderDiv = document.createElement("div");
+					senderHeaderDiv.id = `div_${fromName}`;
+					senderHeaderDiv.className = "senderHeader";
+					senderHeaderDiv.innerHTML = fromName;
+					$("div#mainHolder").append(senderHeaderDiv);
+					
 					$.getJSON(`/inbox/from/${fromNumber}`, function(msgListFromNumber) {
 						
 						
@@ -86,6 +92,7 @@ function initTextList() {
 		</table>
 
 	</div>
+-->
 </div>
 
 </body>

@@ -1,4 +1,9 @@
 
+#senderHeader {
+	background-color: #408FEC;
+	text-align: left;
+    color: white;
+}
 
 #MessageList {
     font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
