@@ -30,7 +30,7 @@ function initTextList() {
 		if(fromList && fromList.length) {
 //			jsonData = result;
 			
-			$.each(resultList, (index, fromNumber) => {
+			$.each(fromList, (index, fromNumber) => {
 				$.getJSON(`/contacts/${fromNumber}`, function(fromObj) {
 					var fromName = "Unknown";
 					if(fromObj)
