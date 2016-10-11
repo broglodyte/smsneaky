@@ -20,7 +20,7 @@ $(document).ready(function(){
     });
 });
 
-var msgDict = {};
+var inbox = {};
 var senderList = [];
 
 $(document).ready( initTextList );
@@ -37,28 +37,28 @@ function initTextList() {
 						fromName = fromObj.fullName || fromObj.name || fromNumber;
 					
 					var senderHeaderDiv = document.createElement("div");
-					senderHeaderDiv.id = `div_${fromName}`;
+					senderHeaderDiv.id = `div_${fromNumber}`;
 					senderHeaderDiv.className = "senderHeader";
 					senderHeaderDiv.innerHTML = fromName;
 					$("div#mainHolder").append(senderHeaderDiv);
-					console.log(`ID: [div_${fromName}]`);
+					console.log(`ID: [div_${fromNumber}]`);
 					
 					$.getJSON(`/inbox/from/${fromNumber}`, function(msgListFromNumber) {
 						console.log(`  > [${msgListFromNumber.length} messages]`);
 						
+						inbox[fromNumber] = msgListFromNumber;
 					});
 				});
 					
-				senderMsgList.push(message);
-				msgDict[sender] = senderMsgList;
+				//senderMsgList.push(message);
 			});
 			
-//			$.each(msgDict, (key, value) => {
+//			$.each(inbox, (key, value) => {
 //				console.log(`key:${key} = value:${value}`);
 //			});	
 /*			
 				var msgHtml = $('<H2></H2>').text(senderKey);
-				var msgList = msgDict[senderKey].sort((a,b) => {return a.timestamp<b.timestamp?-1:1});
+				var msgList = inbox[senderKey].sort((a,b) => {return a.timestamp<b.timestamp?-1:1});
 				$("div#accordion").append(msgHtml);
 				
 				for(msgBlob in msgList) {
@@ -80,7 +80,7 @@ function initTextList() {
 	<div class="senderHolder" id="header_$SENDER">
 		<h3>$SENDER</h3>
 	</div>  -->
-	<div class="MessageList" id="div_$SENDER">
+<!--	<div class="MessageList" id="div_$SENDER">
 
 		<table id="msgTbl_$SENDER">
 			<tr>

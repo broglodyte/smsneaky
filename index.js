@@ -24,6 +24,7 @@ var MongoClient = mongodb.MongoClient;
 var db;
 
 var app = express();
+app.set('json spaces', 2);
 
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	if (err) {
@@ -35,6 +36,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("Database connection ready");
 
+	app.use(/^\/(inbox|contacts).*$/, auth);
+	
 	//	Incoming text webhook (used by Burner)
 	app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
 	// sparky.transmissions.send({
@@ -64,7 +67,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 	});
 
-	// app.use(auth);
 	app.use(express.static('public'));
 
 	app.get('/readMsg', (req, res) => {
