@@ -3,7 +3,7 @@
 <html>
 <head>
     <title>Read Messages</title>
-	<link rel="stylesheet" href="/main.css">
+	<link rel="stylesheet" href="/css/main.css">
 
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
 	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -41,9 +41,10 @@ function initTextList() {
 					senderHeaderDiv.className = "senderHeader";
 					senderHeaderDiv.innerHTML = fromName;
 					$("div#mainHolder").append(senderHeaderDiv);
+					console.log(`ID: [div_${fromName}]`);
 					
 					$.getJSON(`/inbox/from/${fromNumber}`, function(msgListFromNumber) {
-						
+						console.log(`  > [${msgListFromNumber.length} messages]`);
 						
 					});
 				});
