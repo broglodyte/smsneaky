@@ -35,7 +35,36 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("Database connection ready");
 
-	app.use(auth.connect(auth.basic));
+	//	Incoming text webhook (used by Burner)
+	app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
+	// sparky.transmissions.send({
+	// transmissionBody: {
+	// content: {
+	// 	from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN, // 'testing@sparkpostbox.com'
+	// 	  subject: 'DEBUG MSG ',
+	// 	  html:'<html><body><p>Msg Event 0x435asd9</p></body></html>'
+	// 	},
+	// 	recipients: [
+	// 	  {address: 'broginator@icloud.com'}
+	// 	]
+	//   }
+	// }, function(err, res) {
+	//   if (err) {
+	// 	console.log('Whoops! Something went wrong');
+	// 	console.log(err);
+	//   } else {
+	// 	console.log('Email sent!');
+	//   }
+	// });
+		db.collection('inbox').insertOne(req.incoming, (err, r) => {
+			if (err)
+				return res.status(500).json(err);
+
+			return res.status(201).json(r);
+		});
+	});
+
+	// app.use(auth);
 	app.use(express.static('public'));
 
 	app.get('/readMsg', (req, res) => {
@@ -139,37 +168,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 					}
 				);
 		});
-
-		//	Incoming text webhook (used by Burner)
-		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-		// sparky.transmissions.send({
-		// transmissionBody: {
-		// content: {
-		// 	from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN, // 'testing@sparkpostbox.com'
-		// 	  subject: 'DEBUG MSG ',
-		// 	  html:'<html><body><p>Msg Event 0x435asd9</p></body></html>'
-		// 	},
-		// 	recipients: [
-		// 	  {address: 'broginator@icloud.com'}
-		// 	]
-		//   }
-		// }, function(err, res) {
-		//   if (err) {
-		// 	console.log('Whoops! Something went wrong');
-		// 	console.log(err);
-		//   } else {
-		// 	console.log('Email sent!');
-		//   }
-		// });
-			db.collection('inbox').insertOne(req.incoming, (err, r) => {
-				if (err)
-					return res.status(500).json(err);
-
-				return res.status(201).json(r);
-			});
-		});
-
-
 
 		function mapMsg(m) {
 			m.url = `/inbox/msg/${m._id}`;
