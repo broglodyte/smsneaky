@@ -36,15 +36,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("Database connection ready");
 
-//	app.use('/pld', (req, res) => {
-//		console.log(util.inspect(req));
-//		res.header('x-ups-psmpld', 'what%dafuq%ever').send("OK");
-//	});
-//	
 	app.use(/^\/(inbox|contacts).*$/, auth);
 	
 	app.use(express.static('public'));
-
 	
 	app.get('/readMsg', (req, res) => {
 		fs.readFile('readMessages.html', 'utf8', (err, data) => {
@@ -122,14 +116,14 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Delete message :msgID
-		app.delete('/inbox/msg/:msgID',  (req, res) => {
+		app.delete('/inbox/msg/:msgID', (req, res) => {
 			db.collection('inbox')
 				.deleteOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, r) => {
 					if(err) return res.status(500).json(err);
 
-					if(!r.acknowledged || r.deletedCount !== 1)
-						return res.status(404).json(new Error(`Resource msgID [${req.params.msgID}] not found`));
+					if(r.deletedCount !== 1)
+						return res.status(404).json(new Error(`Message ID [${req.params.msgID}] not found`));
 
 					return res.status(204).json(r);
 			});
@@ -173,15 +167,13 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		//   }
 		// });
 			db.collection('inbox').insertOne(req.incoming, (err, r) => {
-				if (err) {
-					var ip =	req.headers['x-forwarded-for']	|| 
-								req.connection.remoteAddress	||
-								req.socket.remoteAddress		||
-								req.connection.socket.remoteAddress;
-					
-					console.log(`Incoming message from [${ip}]: ${req.body.length} bytes.`);
+				if (err) 
 					return res.status(500).json(err);
-				}
+			
+				var ip = req.connection.remoteAddress;
+				var len = req.get('Content-Length');
+				
+				console.log(`Incoming message from [${ip}]: ${len} bytes.`);
 				return res.status(201).json(r);
 			});
 		});
@@ -328,9 +320,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	}
 
 	// Initialize the app.
-	var server = app.listen(process.env.PORT || 8080, function () {
+	var server = app.listen(process.env.PORT || 8080, '0.0.0.0', function () {
+		var address = server.address();
+		console.log(util.inspect(address));
+		
 		var port = server.address().port;
-		console.log(`App running on port [${port}]`);
+		// console.log(`App running on port [${port}]`);
 	});
 });
 
@@ -338,19 +333,24 @@ function formatIncomingMessageJSON(req, res, next) {
 	if (!req.body)
 		return res.status(415).json(new Error('Invalid JSON request body'));
 
-	db.collection('rawPackets').insertOne(req.body, (err, r) => {
-		if(err || r.insertedCount !== 1)
-			console.log('Error inserting data into [rawPackets]');
-		else
-			console.log('Inserted into [rawPackets]');
-	});
-
 	var jsonTxt = req.body
 	var timestamp = Date.now();
+	
+	db.collection('rawPackets').insertOne(req.body, (err, r) => {
+		if(err || r.insertedCount !== 1) {
+			console.log('Error inserting data into [rawPackets]: ');
+			if(err) {
+				console.log(`  >Message: ${err.message}`);
+				console.log(`  >Stack trace:\n-------------------\n\n ${err.stack}`);
+			}
+			console.log(`  >MongoDB return:\n${util.inspect(r)}`)
+		}
+	});
+
 	// var fmtDateTime = moment(timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
 
 	var returnBlob = {
-		sender		: { number : jsonTxt.fromNumber },
+		sender		: jsonTxt.fromNumber.replace(/\D/g,''),
 		type		: jsonTxt.type,
 		data		: jsonTxt.payload,
 		timestamp	: timestamp,
@@ -368,7 +368,10 @@ function formatIncomingMessageJSON(req, res, next) {
 			break;
 
 		default:
-			return res.status(400).json(new Error(`Invalid message type [${jsonTxt.type}]`));
+			var err = new Error(`Invalid message type [${jsonTxt.type}]`);
+			console.log('Error receiving text:');
+			console.log(`   >${util.inspect(err)}`);
+			return res.status(400).json(err);
 	}
 }
 function formatContactInfoJSON(req, res, next) {
