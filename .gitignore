@@ -38,3 +38,5 @@ jspm_packages
 /*.old
 texts.txt
 public/favicon/*
+
+package.backup.json

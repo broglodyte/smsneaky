@@ -36,10 +36,16 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("Database connection ready");
 
+//	app.use('/pld', (req, res) => {
+//		console.log(util.inspect(req));
+//		res.header('x-ups-psmpld', 'what%dafuq%ever').send("OK");
+//	});
+//	
 	app.use(/^\/(inbox|contacts).*$/, auth);
 	
 	app.use(express.static('public'));
 
+	
 	app.get('/readMsg', (req, res) => {
 		fs.readFile('readMessages.html', 'utf8', (err, data) => {
 			if (err)
@@ -57,6 +63,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Get all messages
 		app.get('/inbox',  (req, res) => {
+			console.log('/inbox');
 			db.collection('inbox')
 				.find({})
 				.map(mapMsg)
@@ -72,6 +79,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Get all senders
 		app.get('/inbox/from',  (req, res) => {
+			console.log('/inbox/from');
 			db.collection('inbox')
 				.distinct("sender", (err, data) => {
 					if(err)
@@ -83,8 +91,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Get all messages from :number
 		app.get('/inbox/from/:number',  (req, res) => {
+			console.log('/inbox/from/:number');
 			db.collection('inbox')
-				.find({'fromNumber': req.params.number})
+				.find({'sender': req.params.number})
 				.map(mapMsg)
 				.sort({"timestamp" : -1})
 				.toArray( (err, items) => {
@@ -164,20 +173,40 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		//   }
 		// });
 			db.collection('inbox').insertOne(req.incoming, (err, r) => {
-				if (err)
+				if (err) {
+					var ip =	req.headers['x-forwarded-for']	|| 
+								req.connection.remoteAddress	||
+								req.socket.remoteAddress		||
+								req.connection.socket.remoteAddress;
+					
+					console.log(`Incoming message from [${ip}]: ${req.body.length} bytes.`);
 					return res.status(500).json(err);
-
+				}
 				return res.status(201).json(r);
 			});
 		});
 
 		function mapMsg(m) {
-			m.url = `/inbox/msg/${m._id}`;
+			m.msgUrl = `/inbox/msg/${m._id}`;
+			m.fromUrl = `/inbox/from/${m.sender}`;
 			m.dateTime = moment(m.timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
+			
+			// db.collection('contacts').findOne({number: m.fromNumber}, (err, contact) => {
+				// if(err)
+					// console.warn(err);
+				
+				// if(contact) {
+					// m.contact = {};
+					// m.contact.url = `/contacts/${contact.number}`;
+					// m.contact.sortName = contact.name;
+					// if(contact.fullName)
+						// m.contact.fullName = contact.fullName;
+				// }
 
+				// cb(null, m);
+			// });
 			return m;
 		}
-		
 	}
 
 	/* /// CONTACTS REQUESTS /// */
@@ -321,7 +350,7 @@ function formatIncomingMessageJSON(req, res, next) {
 	// var fmtDateTime = moment(timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
 
 	var returnBlob = {
-		sender		: jsonTxt.fromNumber.replace(/\D/g, ''),
+		sender		: { number : jsonTxt.fromNumber },
 		type		: jsonTxt.type,
 		data		: jsonTxt.payload,
 		timestamp	: timestamp,
