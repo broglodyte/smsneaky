@@ -218,11 +218,11 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-			if(req.incoming.sender === '19186137103') {
+			if(req.incoming.sender === '19189244779') {
 				var payload = {
 					intent: "message",
 					data: {
-						toNumber: '+19186137103',
+						toNumber: '+19189244779',
 						text:	'haha you been blocked, bye fe fe'
 					}						
 				};
