@@ -1,4 +1,4 @@
-
+var https = require('https');
 
 const routeMessages = true;
 const routeContacts = true;
@@ -14,9 +14,10 @@ var express = require('express');
 var auth = require('./auth');
 var jsonParser = require('body-parser').json();
 
-// var SparkPost = require('sparkpost');
+var SparkPost = require('sparkpost');
 // console.log("API Key: " + process.env.SPARKPOST_API_KEY);
-// var sparky = new SparkPost(process.env.SPARKPOST_API_KEY);
+var sparky = new SparkPost(process.env.SPARKPOST_API_KEY);
+// var sneakyDB = require('./sneakydb');
 
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
@@ -26,6 +27,17 @@ var db;
 var app = express();
 app.set('json spaces', 2);
 
+var alertNewMessages = null;
+
+// sneakyDB.Init(main);
+
+function main(err, db) {
+	if (err) {
+		console.log(err);
+		process.exit(1);
+	}
+	
+}
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	if (err) {
 		console.log(err);
@@ -65,6 +77,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				.toArray((err, items) => {
 					if (err)
 						return res.status(500).json(err);
+					
+					
 
 					return res.json(items);
 				}
@@ -144,28 +158,114 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 					}
 				);
 		});
+		
+		app.post('/outgoing', [jsonParser, buildBurnerJSON], (req, res) => {
+			var host = 'api.burnerapp.com';
+			var burnerID = 'b06553cc-7630-4061-9d75-8e258a741822';
+			var token = '2c3ac9cc-f306-c086-a5de-8617877e0f13';
+			var urlPath = `/webhooks/burner/${burnerID}?token=${token}`;
+			var fullURL = `https://${server}${urlPath}`;
+			
+			var reqOptions = {
+				host: host,
+				path: urlPath,
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Content-Length': +req.outgoing.length
+				}
+			};
+			
+			var postReq = https.request(reqOptions, (resFromBurner) => {
+				console.log(`Outgoing message: ${resFromBurner.statusCode}`);
+				resFromBurner.setEncoding('utf8');
+				var chunky = '';
+				
+				resFromBurner.on('data', (chunk) => {
+					chunky += chunk; 
+				});
+				
+				resFromBurner.on('end', () => {
+					console.log('Burner returned: ');
+					console.log('---------------------------------');
+					console.log(chunky);
+					console.log('---------------END-OF-RESPONSE---');
+					
+					var headerFields = Object.keys(resFromBurner.headers);
+					for (i=0; i<headerFields.length; i++)
+						res.set(headerFields[i], resFromBurner.headers[headerFields[i]]);
+					
+					db.collection('sent').insertOne(req.body, (err, r) => {
+						if(err)
+							// return res.status(500).json(err);
+							console.log(`Error inserting outgoing record: ${err}`);
+						else
+							console.log('Sent item added to database');
+					});
+					
+					res.status(resFromBurner.statusCode).send(chunky);
+				});
+				
+			});
+			postReq.on('error', (e) => {
+			  console.log(`problem with request: ${e.message}`);
+			});
+			
+			postReq.write(req.outgoing);
+			postReq.end();
+		});
+		
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-		// sparky.transmissions.send({
-		// transmissionBody: {
-		// content: {
-		// 	from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN, // 'testing@sparkpostbox.com'
-		// 	  subject: 'DEBUG MSG ',
-		// 	  html:'<html><body><p>Msg Event 0x435asd9</p></body></html>'
-		// 	},
-		// 	recipients: [
-		// 	  {address: 'broginator@icloud.com'}
-		// 	]
-		//   }
-		// }, function(err, res) {
-		//   if (err) {
-		// 	console.log('Whoops! Something went wrong');
-		// 	console.log(err);
-		//   } else {
-		// 	console.log('Email sent!');
-		//   }
-		// });
+			if(req.incoming.sender === '19186137103') {
+				var payload = {
+					intent: "message",
+					data: {
+						toNumber: '+19186137103',
+						text:	'haha you been blocked, bye fe fe'
+					}						
+				};
+				
+				var payloadStr = JSON.stringify(payload);
+				var payloadStrLen = payloadStr.length;
+				
+				var req = https.request(
+					{
+						hostname: 'api.burnerapp.com',
+						path: '/webhooks/burner/b06553cc-7630-4061-9d75-8e258a741822?token=2c3ac9cc-f306-c086-a5de-8617877e0f13',
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'Content-Length': payloadStrLen
+						}
+					}, (res) => {
+						console.log(`STATUS: ${res.statusCode}`);
+						console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+						res.setEncoding('utf8');
+						res.on('data', (chunk) => {
+							console.log(`BODY: ${chunk}`);
+						});
+						res.on('end', () => {
+							console.log('No more data in response.');
+						});
+				
+				});
+			
+				req.on('error', (e) => {
+					console.log(`problem with request: ${e.message}`);
+				});
+
+				// write data to request body
+				req.write(payloadStr);
+				req.end();
+			}
+			
+			
+			//	start countdown to email notification (if one isnt already going):
+			if(!alertNewMessages)
+				alertNewMessages = setTimeout(fireNewMsgEmail, 1800000);
+		
 			db.collection('inbox').insertOne(req.incoming, (err, r) => {
 				if (err) 
 					return res.status(500).json(err);
@@ -200,10 +300,10 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			return m;
 		}
 	}
+	
 
 	/* /// CONTACTS REQUESTS /// */
 	if(routeContacts) {
-
 		//	Create new contact entry:
 		app.post('/contacts',  [jsonParser, formatContactInfoJSON], (req, res) => {
 			try {
@@ -319,6 +419,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		}
 	}
 
+	
 	// Initialize the app.
 	var server = app.listen(process.env.PORT || 8080, '0.0.0.0', function () {
 		var address = server.address();
@@ -347,8 +448,6 @@ function formatIncomingMessageJSON(req, res, next) {
 		}
 	});
 
-	// var fmtDateTime = moment(timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
-
 	var returnBlob = {
 		sender		: jsonTxt.fromNumber.replace(/\D/g,''),
 		type		: jsonTxt.type,
@@ -374,17 +473,17 @@ function formatIncomingMessageJSON(req, res, next) {
 			return res.status(400).json(err);
 	}
 }
+
 function formatContactInfoJSON(req, res, next) {
 	if (!req.body)
 		return res.status(415).json(new Error('Invalid JSON request body'));
 
 	try {
 		var jsonData = {
-			number: req.body.number.replace(/\D/g, ''),
-			name:   req.body.name.replace(/\W/g, ''),
-			fullName: req.body.fullName || req.body.name
+			number:		req.body.number.replace(/\D/g, ''),
+			name:   	req.body.name.replace(/\W/g, ''),
+			fullName: 	req.body.fullName || req.body.name
 		};
-
 		req.json = jsonData;
 
 		next();
@@ -392,4 +491,62 @@ function formatContactInfoJSON(req, res, next) {
 	catch (err) {
 		return res.status(400).json(err);
 	}
+}
+
+function buildBurnerJSON(req, res, next) {
+	if(!req.body)
+		return res.status(415).json({error: "Invalid JSON request data"});
+	
+	var msg = req.body;
+	
+	if(!(msg.toNumber || msg.payload))
+		return res.status(415).json({error: "Invalid JSON request data"});
+	
+	var outgoingMsg = {
+		intent: 'message',
+		data:	{
+			toNumber:	msg.toNumber,
+			text:		msg.payload
+		}
+	};
+	
+	req.outgoing = JSON.stringify(outgoingMsg);
+	next();
+}
+
+function createError(code, message) {
+	switch(arguments.length) {
+		case 0:
+			code = 500;
+			message = "Unknown error";
+			break;
+		case 1:
+			code = 500;
+			message = code;
+			break;		
+	}
+	return {errorCode: code, errorMessage: mmessage};
+}
+
+function fireNewMsgEmail() {
+	sparky.transmissions.send({
+			transmissionBody: {
+			content: {
+				from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN,
+				  subject: 'DEBUG',
+				  html:'<html><body><p>Msg Event 0x435asd9: Items in queue!</p></body></html>'
+				},
+				recipients: [
+				  {address: 'broginator@gmail.com'}
+				]
+			  }
+			}, function(err, res) {
+			  if (err) {
+				console.log('Whoops! Something went wrong');
+				console.log(err);
+			  } else {
+				console.log('Email sent!');
+			  }
+			});
+				
 }
