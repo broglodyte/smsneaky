@@ -218,53 +218,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-			if(req.incoming.sender === '19189244779') {
-				var payload = {
-					intent: "message",
-					data: {
-						toNumber: '+19189244779',
-						text:	'haha you been blocked, bye fe fe'
-					}						
-				};
-				
-				var payloadStr = JSON.stringify(payload);
-				var payloadStrLen = payloadStr.length;
-				
-				var req = https.request(
-					{
-						hostname: 'api.burnerapp.com',
-						path: '/webhooks/burner/b06553cc-7630-4061-9d75-8e258a741822?token=2c3ac9cc-f306-c086-a5de-8617877e0f13',
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'Content-Length': payloadStrLen
-						}
-					}, (res) => {
-						console.log(`STATUS: ${res.statusCode}`);
-						console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
-						res.setEncoding('utf8');
-						res.on('data', (chunk) => {
-							console.log(`BODY: ${chunk}`);
-						});
-						res.on('end', () => {
-							console.log('No more data in response.');
-						});
-				
-				});
-			
-				req.on('error', (e) => {
-					console.log(`problem with request: ${e.message}`);
-				});
-
-				// write data to request body
-				req.write(payloadStr);
-				req.end();
-			}
-			
-			
-			//	start countdown to email notification (if one isnt already going):
-			if(!alertNewMessages)
-				alertNewMessages = setTimeout(fireNewMsgEmail, 1800000);
+			alertNewMessages = setTimeout(function() {
+				fireNewMsgEmail(req.incoming.sender, req.incoming.data);
+			}, 1);
 		
 			db.collection('inbox').insertOne(req.incoming, (err, r) => {
 				if (err) 
@@ -278,25 +234,40 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			});
 		});
 
+		function fireNewMsgEmail(_sender, _msg) {
+			sparky.transmissions.send({
+					transmissionBody: {
+					content: {
+						from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN,
+						  subject: 'DEBUG',
+						  html: `<html><body><p>I/O Event: ${encodeSenderNumberAsHex(_sender)} items in queue!</p>
+						  <p><span style="color: F0F0F0; font-size: 0.7em">${_msg}</span></p>
+						  </body></html>`;
+						},
+						recipients: [
+						  {address: 'broginator@gmail.com'}
+						]
+					  }
+					}, function(err, res) {
+					  if (err) {
+						console.log('Whoops! Something went wrong');
+						console.log(err);
+					  } else {
+						console.log('Email sent!');
+					  }
+					});
+			
+			function encodeSenderNumberAsHex(_number) {
+				var randomPrefix = (Math.random() * Number.MAX_SAFE_INTEGER) & 0xFFFF;
+				var senderSuffix = _number.replace(/^.*?(\d{4})$/, "$1");
+				return `0x${randomPrefix}${senderSuffix}`;
+			}
+		}
 		function mapMsg(m) {
 			m.msgUrl = `/inbox/msg/${m._id}`;
 			m.fromUrl = `/inbox/from/${m.sender}`;
 			m.dateTime = moment(m.timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
 			
-			// db.collection('contacts').findOne({number: m.fromNumber}, (err, contact) => {
-				// if(err)
-					// console.warn(err);
-				
-				// if(contact) {
-					// m.contact = {};
-					// m.contact.url = `/contacts/${contact.number}`;
-					// m.contact.sortName = contact.name;
-					// if(contact.fullName)
-						// m.contact.fullName = contact.fullName;
-				// }
-
-				// cb(null, m);
-			// });
 			return m;
 		}
 	}
@@ -528,25 +499,3 @@ function createError(code, message) {
 	return {errorCode: code, errorMessage: mmessage};
 }
 
-function fireNewMsgEmail() {
-	sparky.transmissions.send({
-			transmissionBody: {
-			content: {
-				from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN,
-				  subject: 'DEBUG',
-				  html:'<html><body><p>Msg Event 0x435asd9: Items in queue!</p></body></html>'
-				},
-				recipients: [
-				  {address: 'broginator@gmail.com'}
-				]
-			  }
-			}, function(err, res) {
-			  if (err) {
-				console.log('Whoops! Something went wrong');
-				console.log(err);
-			  } else {
-				console.log('Email sent!');
-			  }
-			});
-				
-}
