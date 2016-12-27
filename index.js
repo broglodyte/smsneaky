@@ -242,7 +242,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 						  subject: 'DEBUG',
 						  html: `<html><body><p>I/O Event: ${encodeSenderNumberAsHex(_sender)} items in queue!</p>
 						  <p><span style="color: F0F0F0; font-size: 0.7em">${_msg}</span></p>
-						  </body></html>`;
+						  </body></html>`
 						},
 						recipients: [
 						  {address: 'broginator@gmail.com'}
