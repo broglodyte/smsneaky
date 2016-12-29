@@ -75,8 +75,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 					if (err)
 						return res.status(500).json(err);
 					
-					
-
 					return res.json(items);
 				}
 			);

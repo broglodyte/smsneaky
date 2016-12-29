@@ -38,6 +38,4 @@ jspm_packages
 /*.old
 texts.txt
 public/favicon/*
-
-# environment variables:
-.env
+.vs
