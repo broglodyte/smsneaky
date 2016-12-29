@@ -1,4 +1,5 @@
 var https = require('https');
+var chalk = require('chalk');
 
 const routeMessages = true;
 const routeContacts = true;
