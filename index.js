@@ -36,6 +36,7 @@ function main(err, db) {
 	}
 	
 }
+
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	if (err) {
 		console.log(err);
@@ -155,7 +156,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				);
 		});
 		
-		app.post('/outgoing', [jsonParser, buildBurnerJSON], (req, res) => {
+
+		app.post('/outgoing', [jsonParser, formatOutgoingMessageJSON], (req, res) => {
 			var host = process.env.BURNER_HOST;
 			var burnerID = process.env.BURNER_ID;
 			var token = process.env.BURNER_TOKEN
@@ -184,7 +186,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				resFromBurner.on('end', () => {
 					var sendSuccess = JSON.parse(chunky).success;
 					var sendSuccessString = sendSuccess ? chalk.green('Success') : chalk.red('FAILURE');
-					console.log(` Send successful: ${sendSuccessString}`);
+					console.log(`Send successful: ${sendSuccessString}`);
 					
 					var headerFields = Object.keys(resFromBurner.headers);
 					for (i=0; i<headerFields.length; i++)
@@ -195,7 +197,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 							// return res.status(500).json(err);
 							console.log(`Error inserting outgoing record: ${err}`);
 						else
-							console.log('Sent item added to database');
+							console.log('Outgoing text logged to database');
 					});
 					
 					res.status(resFromBurner.statusCode).send(chunky);
@@ -431,25 +433,26 @@ function formatContactInfoJSON(req, res, next) {
 	}
 }
 
-function buildBurnerJSON(req, res, next) {
+function formatOutgoingMessageJSON(req, res, next) {
 	if(!req.body)
 		return res.status(415).json({error: "Invalid JSON request data"});
 	
 	var msg = req.body;
 	
-	if(!(msg.toNumber || msg.payload))
+	if(!(msg.toNumber || msg.text))
 		return res.status(415).json({error: "Invalid JSON request data"});
 	
 	var outgoingMsg = {
 		intent: 'message',
 		data:	{
 			toNumber:	msg.toNumber,
-			text:		msg.payload
+			text:		msg.text
 		}
 	};
 	
 	req.outgoing = JSON.stringify(outgoingMsg);
-	req.msgRecord = {}
+	req.body.timestamp = Date.now();
+	
 	next();
 }
 
