@@ -39,4 +39,5 @@ jspm_packages
 texts.txt
 public/favicon/*
 
-package.backup.json
+# environment variables:
+.env

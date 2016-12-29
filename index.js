@@ -14,9 +14,6 @@ var express = require('express');
 var auth = require('./auth');
 var jsonParser = require('body-parser').json();
 
-var SparkPost = require('sparkpost');
-// console.log("API Key: " + process.env.SPARKPOST_API_KEY);
-var sparky = new SparkPost(process.env.SPARKPOST_API_KEY);
 // var sneakyDB = require('./sneakydb');
 
 var mongodb = require('mongodb');
@@ -160,9 +157,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 		
 		app.post('/outgoing', [jsonParser, buildBurnerJSON], (req, res) => {
-			var host = 'api.burnerapp.com';
-			var burnerID = 'b06553cc-7630-4061-9d75-8e258a741822';
-			var token = '2c3ac9cc-f306-c086-a5de-8617877e0f13';
+			var host = process.env.BURNER_HOST;
+			var burnerID = process.env.BURNER_ID;
+			var token = process.env.BURNER_TOKEN
 			var urlPath = `/webhooks/burner/${burnerID}?token=${token}`;
 			var fullURL = `https://${server}${urlPath}`;
 			
@@ -186,10 +183,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				});
 				
 				resFromBurner.on('end', () => {
-					console.log('Burner returned: ');
-					console.log('---------------------------------');
-					console.log(chunky);
-					console.log('---------------END-OF-RESPONSE---');
+					var sendSuccess = JSON.parse(chunky).success;
+					var sendSuccessString = sendSuccess ? chalk.green('Success') : chalk.red('FAILURE');
+					console.log(` Send successful: ${sendSuccessString}`);
 					
 					var headerFields = Object.keys(resFromBurner.headers);
 					for (i=0; i<headerFields.length; i++)
@@ -218,9 +214,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-			alertNewMessages = setTimeout(function() {
-				fireNewMsgEmail(req.incoming.sender, req.incoming.data);
-			}, 1);
+//			alertNewMessages = setTimeout(function() {
+//				fireNewMsgEmail(req.incoming.sender, req.incoming.data);
+//			}, 1);
 		
 			db.collection('inbox').insertOne(req.incoming, (err, r) => {
 				if (err) 
@@ -234,35 +230,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			});
 		});
 
-		function fireNewMsgEmail(_sender, _msg) {
-			sparky.transmissions.send({
-					transmissionBody: {
-					content: {
-						from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN,
-						  subject: 'DEBUG',
-						  html: `<html><body><p>I/O Event: ${encodeSenderNumberAsHex(_sender)} items in queue!</p>
-						  <p><span style="color: F0F0F0; font-size: 0.7em">${_msg}</span></p>
-						  </body></html>`
-						},
-						recipients: [
-						  {address: 'broginator@gmail.com'}
-						]
-					  }
-					}, function(err, res) {
-					  if (err) {
-						console.log('Whoops! Something went wrong');
-						console.log(err);
-					  } else {
-						console.log('Email sent!');
-					  }
-					});
-			
-			function encodeSenderNumberAsHex(_number) {
-				var randomPrefix = (Math.random() * Number.MAX_SAFE_INTEGER) & 0xFFFF;
-				var senderSuffix = _number.replace(/^.*?(\d{4})$/, "$1");
-				return `0x${randomPrefix}${senderSuffix}`;
-			}
-		}
 		function mapMsg(m) {
 			m.msgUrl = `/inbox/msg/${m._id}`;
 			m.fromUrl = `/inbox/from/${m.sender}`;
@@ -401,6 +368,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	});
 });
 
+
 function formatIncomingMessageJSON(req, res, next) {
 	if (!req.body)
 		return res.status(415).json(new Error('Invalid JSON request body'));
@@ -482,6 +450,7 @@ function buildBurnerJSON(req, res, next) {
 	};
 	
 	req.outgoing = JSON.stringify(outgoingMsg);
+	req.msgRecord = {}
 	next();
 }
 
@@ -499,3 +468,35 @@ function createError(code, message) {
 	return {errorCode: code, errorMessage: mmessage};
 }
 
+
+
+
+//		function fireNewMsgEmail(_sender, _msg) {
+//			sparky.transmissions.send({
+//					transmissionBody: {
+//					content: {
+//						from: 'testing@' + process.env.SPARKPOST_SANDBOX_DOMAIN,
+//						  subject: 'DEBUG',
+//						  html: `<html><body><p>I/O Event: ${encodeSenderNumberAsHex(_sender)} items in queue!</p>
+//						  <p><span style="color: F0F0F0; font-size: 0.7em">${_msg}</span></p>
+//						  </body></html>`
+//						},
+//						recipients: [
+//						  {address: 'broginator@gmail.com'}
+//						]
+//					  }
+//					}, function(err, res) {
+//					  if (err) {
+//						console.log('Whoops! Something went wrong');
+//						console.log(err);
+//					  } else {
+//						console.log('Email sent!');
+//					  }
+//					});
+//			
+//			function encodeSenderNumberAsHex(_number) {
+//				var randomPrefix = (Math.random() * Number.MAX_SAFE_INTEGER) & 0xFFFF;
+//				var senderSuffix = _number.replace(/^.*?(\d{4})$/, "$1");
+//				return `0x${randomPrefix}${senderSuffix}`;
+//			}
+//		}
