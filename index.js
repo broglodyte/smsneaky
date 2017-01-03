@@ -19,7 +19,8 @@ var jsonParser = require('body-parser').json();
 // var sneakyDB = require('./sneakydb');
 
 var nodemailer = require('nodemailer');
-var transporter = nodemailer.createTransport(`smtp://${process.env.GMAIL_USERNAME}:${process.env.GMAIL_PASSWORD}@smtp.gmail.com`)
+var transporter = nodemailer.createTransport(
+	`smtps://${process.env.GMAIL_USERNAME}:${process.env.GMAIL_PASSWORD}@smtp.gmail.com`);
 var mailOptions = {
 	from: 'nodemailer@herokuapp.com',
 	to: 'brianmichaelrogers@gmail.com'
@@ -40,7 +41,8 @@ var alertNewMessages = null;
 function fireNewMsgEmail(_sender, _msg) {
 	
 	mailOptions.subject = `DEBUG 0x${encodeSenderNumberAsHex(_sender)}}`;
-	mailOptions.html = `<html>
+	mailOptions.html = `<!-- DOCTYPE -->
+<html>
 	<body>
 		<p>I/O Event: ${encodeSenderNumberAsHex(_sender)} items in queue!</p>
 		<p><span style="color: F0F0F0; font-size: 0.7em">${_msg}</span></p>
