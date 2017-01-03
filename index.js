@@ -1,5 +1,6 @@
 var https = require('https');
 var chalk = require('chalk');
+var _ = require('lodash');
 
 const routeMessages = true;
 const routeContacts = true;
@@ -17,6 +18,13 @@ var jsonParser = require('body-parser').json();
 
 // var sneakyDB = require('./sneakydb');
 
+var nodemailer = require('nodemailer');
+var transporter = nodemailer.createTransport(`smtp://${process.env.GMAIL_USERNAME}:${process.env.GMAIL_PASSWORD}@smtp.gmail.com`)
+var mailOptions = {
+	from: 'nodemailer@herokuapp.com',
+	to: 'brianmichaelrogers@gmail.com'
+}
+
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
 
@@ -29,12 +37,35 @@ var alertNewMessages = null;
 
 // sneakyDB.Init(main);
 
+function fireNewMsgEmail(_sender, _msg) {
+	
+	mailOptions.subject = `DEBUG 0x${encodeSenderNumberAsHex(_sender)}}`;
+	mailOptions.html = `<html>
+	<body>
+		<p>I/O Event: ${encodeSenderNumberAsHex(_sender)} items in queue!</p>
+		<p><span style="color: F0F0F0; font-size: 0.7em">${_msg}</span></p>
+	</body>
+</html>`;
+
+	transporter.sendMail(mailOptions, (err, info) => {
+		if(err)
+			return console.log(err);
+		
+		console.log('Email sent: ' + info.response);
+	});
+	
+	function encodeSenderNumberAsHex(_number) {
+		var randomPrefix = (Math.random() * Number.MAX_SAFE_INTEGER) & 0xFFFF;
+		var senderSuffix = _number.replace(/^.*?(\d{4})$/, "$1");
+		return `0x${randomPrefix.toString(16)}${senderSuffix}`;
+	}
+}
+	
 function main(err, db) {
 	if (err) {
 		console.log(err);
 		process.exit(1);
-	}
-	
+	}	
 }
 
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
@@ -47,7 +78,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("Database connection ready");
 
-	app.use(/^\/(inbox|contacts).*$/, auth);
+	app.use(/^\/(inbox|sent|conversation|contacts).*$/, auth);
 	
 	app.use(express.static('public'));
 	
@@ -98,14 +129,47 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		app.get('/inbox/from/:number',  (req, res) => {
 			console.log('/inbox/from/:number');
 			db.collection('inbox')
-				.find({'sender': req.params.number})
+				.find({sender: req.params.number})
 				.map(mapMsg)
-				.sort({"timestamp" : -1})
+				.sort({timestamp: -1})
 				.toArray( (err, items) => {
 					if (err)
 						return res.status(500).json(err);
 
 					return res.status(200).json(items);
+				}
+			);
+		});
+		
+		app.get('/conversation/:number', (req, res) => {
+			console.log('/conversation/:number');
+			var theirNumber = req.params.number;
+			
+			//	first get msgs from them to me:
+			db.collection('inbox')
+				.find({sender: theirNumber})
+				.map(mapMsg)
+				.toArray((err, fromSender) => {
+					if(err)
+						return res.status(404).json(err);
+					
+					console.log(` > From: ${fromSender.length}`);
+					
+					//	now get msgs from me to them
+					db.collection('sent')
+						.find({toNumber: theirNumber})
+						.map(mapMsg)
+						.toArray((err, fromMe) => {
+							if(err)
+								return res.status(404).json(err);
+							
+							console.log(` > To:   ${fromMe.length}`);
+							
+							var allMessages = _.sortBy(_.concat(fromSender, fromMe), 'timestamp');
+							
+							res.json(allMessages);
+						}
+					);
 				}
 			);
 		});
@@ -232,8 +296,14 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		function mapMsg(m) {
-			m.msgUrl = `/inbox/msg/${m._id}`;
-			m.fromUrl = `/inbox/from/${m.sender}`;
+			if(m.type === 'outboundText') {
+				m.msgUrl = `/sent/msg/${m._id}`;
+				m.toUrl = `/sent/to/${m.toNumber}`;
+			}
+			else {
+				m.msgUrl = `/inbox/msg/${m._id}`;
+				m.fromUrl = `/inbox/from/${m.sender}`;
+			}
 			m.dateTime = moment(m.timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
 			
 			return m;
@@ -398,6 +468,8 @@ function formatIncomingMessageJSON(req, res, next) {
 		externalSrc	: jsonTxt.type !== 'inboundText'
 	};
 
+	fireNewMsgEmail(returnBlob.sender, returnBlob.data);
+	
 	switch (jsonTxt.type) {
 		case "voiceMail":
 		case "inboundMedia":
@@ -452,6 +524,7 @@ function formatOutgoingMessageJSON(req, res, next) {
 	
 	req.outgoing = JSON.stringify(outgoingMsg);
 	req.body.timestamp = Date.now();
+	req.body.type = 'outboundText';
 	
 	next();
 }
@@ -472,7 +545,7 @@ function createError(code, message) {
 
 
 
-
+//
 //		function fireNewMsgEmail(_sender, _msg) {
 //			sparky.transmissions.send({
 //					transmissionBody: {
