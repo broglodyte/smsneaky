@@ -1,5 +1,7 @@
 //smtp.js
 
+var util = require('util');
+
 var Mailgun		= require('mailgun-js');
 var api_key		= 'key-83285361c1ac919109438fea341496a2';
 var domain		= 'sandbox7245aa8bbe9248c9bca072217ce3a667.mailgun.org';
@@ -26,13 +28,12 @@ module.exports = function(_sender, _msg) {
 		if(err)
 			return console.log(err);
 		
-		console.log(`Sendmail results: ${body}`);		
+		console.log(`Sendmail results: ${util.inspect(body)}`);		
 	});
 	
 	function encodeSenderNumberAsHex(_number) {
 		var randomPrefix = (Math.random() * Number.MAX_SAFE_INTEGER) & 0xFFFF;
 		var senderSuffix = _number.replace(/^.*?(\d{4})$/, "$1");
 		return `0x${randomPrefix.toString(16)}${senderSuffix}`;
-	}
-	
+	}	
 }

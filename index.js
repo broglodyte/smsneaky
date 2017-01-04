@@ -251,9 +251,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-			
-			console.log(`Incoming message: ${req.incoming.data.length} bytes`)
-		
 			db.collection('inbox').insertOne(req.incoming, (err, r) => {
 				if (err) 
 					return res.status(500).json(err);
