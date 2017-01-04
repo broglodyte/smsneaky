@@ -14,17 +14,11 @@ const crypto = require('crypto');
 
 var express = require('express');
 var auth = require('./auth');
+var sendmail = require('./smtp');
 var jsonParser = require('body-parser').json();
 
 // var sneakyDB = require('./sneakydb');
 
-var nodemailer = require('nodemailer');
-var transporter = nodemailer.createTransport(
-	`smtps://${process.env.GMAIL_USERNAME}:${process.env.GMAIL_PASSWORD}@smtp.gmail.com`);
-var mailOptions = {
-	from: 'nodemailer@herokuapp.com',
-	to: 'brianmichaelrogers@gmail.com'
-}
 
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
@@ -38,30 +32,6 @@ var alertNewMessages = null;
 
 // sneakyDB.Init(main);
 
-function fireNewMsgEmail(_sender, _msg) {
-	console.log('Sending email...');
-	mailOptions.subject = `DEBUG 0x${encodeSenderNumberAsHex(_sender)}}`;
-	mailOptions.html = `<!-- DOCTYPE -->
-<html>
-	<body>
-		<p>I/O Event: ${encodeSenderNumberAsHex(_sender)} items in queue!</p>
-		<p><span style="color: F0F0F0; font-size: 0.7em">${_msg}</span></p>
-	</body>
-</html>`;
-
-	transporter.sendMail(mailOptions, (err, info) => {
-		if(err)
-			return console.log(err);
-		
-		console.log('Email sent: ' + info.response);
-	});
-	
-	function encodeSenderNumberAsHex(_number) {
-		var randomPrefix = (Math.random() * Number.MAX_SAFE_INTEGER) & 0xFFFF;
-		var senderSuffix = _number.replace(/^.*?(\d{4})$/, "$1");
-		return `0x${randomPrefix.toString(16)}${senderSuffix}`;
-	}
-}
 	
 function main(err, db) {
 	if (err) {
@@ -78,7 +48,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 	// Save database object from the callback for reuse.
 	app.locals.db = db = database;
-	console.log("Database connection ready");
+	console.log("> Ready");
 
 	app.use(/^\/(inbox|sent|conversation|contacts).*$/, auth);
 	
@@ -105,7 +75,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			db.collection('inbox')
 				.find({})
 				.map(mapMsg)
-				.sort({"timestamp" : -1})
+				.sort({timestamp: -1})
 				.toArray((err, items) => {
 					if (err)
 						return res.status(500).json(err);
@@ -168,7 +138,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 							console.log(` > To:   ${fromMe.length}`);
 							
 							var allMessages = _.sortBy(_.concat(fromSender, fromMe), 'timestamp');
-							
+							_.reverse(allMessages);
 							res.json(allMessages);
 						}
 					);
@@ -281,9 +251,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-//			alertNewMessages = setTimeout(function() {
-//				fireNewMsgEmail(req.incoming.sender, req.incoming.data);
-//			}, 1);
+			
+			console.log(`Incoming message: ${req.incoming.data.length} bytes`)
 		
 			db.collection('inbox').insertOne(req.incoming, (err, r) => {
 				if (err) 
@@ -292,7 +261,10 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				var ip = req.connection.remoteAddress;
 				var len = req.get('Content-Length');
 				
-				console.log(`Incoming message from [${ip}]: ${len} bytes.`);
+				console.log(`Incoming message via [${ip}]: ${len} bytes.`);
+				
+				sendmail(req.incoming.sender, req.incoming.data);
+	
 				return res.status(201).json(r);
 			});
 		});
@@ -448,17 +420,6 @@ function formatIncomingMessageJSON(req, res, next) {
 	var jsonTxt = req.body
 	var timestamp = Date.now();
 	
-	db.collection('rawPackets').insertOne(req.body, (err, r) => {
-		if(err || r.insertedCount !== 1) {
-			console.log('Error inserting data into [rawPackets]: ');
-			if(err) {
-				console.log(`  >Message: ${err.message}`);
-				console.log(`  >Stack trace:\n-------------------\n\n ${err.stack}`);
-			}
-			console.log(`  >MongoDB return:\n${util.inspect(r)}`)
-		}
-	});
-
 	var returnBlob = {
 		sender		: jsonTxt.fromNumber.replace(/\D/g,''),
 		type		: jsonTxt.type,
@@ -469,8 +430,6 @@ function formatIncomingMessageJSON(req, res, next) {
 		externalSrc	: jsonTxt.type !== 'inboundText'
 	};
 
-	fireNewMsgEmail(returnBlob.sender, returnBlob.data);
-	
 	switch (jsonTxt.type) {
 		case "voiceMail":
 		case "inboundMedia":

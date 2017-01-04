@@ -15,9 +15,9 @@
     "express": "4.13.3",
     "http-auth": "^2.4.10",
     "lodash": "^4.17.3",
+    "mailgun-js": "^0.8.0",
     "moment-timezone": "^0.5.5",
     "mongodb": "^2.2.10",
-    "nodemailer": "^2.7.0",
     "serve-favicon": "^2.3.0",
     "serve-static": "^1.11.1"
   },
