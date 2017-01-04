@@ -38,7 +38,7 @@ var alertNewMessages = null;
 // sneakyDB.Init(main);
 
 function fireNewMsgEmail(_sender, _msg) {
-	
+	console.log('Sending email...');
 	mailOptions.subject = `DEBUG 0x${encodeSenderNumberAsHex(_sender)}}`;
 	mailOptions.html = `<html>
 	<body>
@@ -432,7 +432,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	// Initialize the app.
 	var server = app.listen(process.env.PORT || 8080, '0.0.0.0', function () {
 		var address = server.address();
-		console.log(util.inspect(address));
 		
 		var port = server.address().port;
 		// console.log(`App running on port [${port}]`);
