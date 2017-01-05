@@ -18,9 +18,6 @@ var auth = require('./auth');
 var sendmail = require('./smtp');
 var jsonParser = require('body-parser').json();
 
-// var sneakyDB = require('./sneakydb');
-
-
 var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
 
@@ -28,10 +25,6 @@ var db;
 
 var app = express();
 app.set('json spaces', 2);
-
-var alertNewMessages = null;
-
-// sneakyDB.Init(main);
 
 	
 function main(err, db) {
@@ -51,30 +44,35 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("> Ready");
 
-	app.use(/^\/(inbox|sent|conversation|contacts).*$/, auth);
+	app.use(/^\/(inbox|sent|conversation|contacts|main).*$/, auth);
 	
 	app.use(express.static('public'));
 	
-	app.get('/readMsg', (req, res) => {
-		fs.readFile('readMessages.html', 'utf8', (err, data) => {
-			if (err)
-				return res.status(500).send(err);
-
-			res.send(data);
-		});
-	});
+//	app.get('/readMsg', (req, res) => {
+//		fs.readFile('readMessages.html', 'utf8', (err, data) => {
+//			if (err)
+//				return res.status(500).send(err);
+//
+//			res.send(data);
+//		});
+//	});
 
 	/* /// INBOX REQUESTS /// */
 	if(routeMessages) {
 		app.get('/', (req, res) => {
-//			res.redirect(301, '/inbox');
+			console.log('> Redirecting...');
+			
+			res.redirect(301, '/main');
+		});
+		
+		app.get('/main', (req, res) => {
 			console.log('> Reading main.html...');
 			fs.readFile('main.html', (err, data) => {
 				if(err)
 					return res.status(500).send(err);
 				
 				console.log('> Sending to client...');
-				
+				res.set('Content-Type', 'text/html');
 				res.send(data);
 			});
 		});
@@ -422,7 +420,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		var address = server.address();
 		
 		var port = server.address().port;
-		// console.log(`App running on port [${port}]`);
+		console.log(`> App listening on port [${port}]`);
 	});
 });
 

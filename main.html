@@ -7,7 +7,7 @@
   <script language="JavaScript">
 	$(document).ready(function() {
 		var urlPath = '/inbox/from';
-		var convSelect = document.getElementByID('convSelect');
+		var convSelect = document.getElementById('convSelect');
 		
 		$.getJSON(urlPath, function(convList) {
 			var dropdownOptionsList = convList.map(function(item) {
@@ -19,7 +19,10 @@
 			});
 		});
 		
-		$('#convSelect').
+		$('#convSelect').change(function() {
+			var selectedConversation = convSelect.value;
+			alert(selectedConversation)
+		});
 	});
   </script>
  </head>
