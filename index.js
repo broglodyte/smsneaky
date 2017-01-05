@@ -1,5 +1,6 @@
 var https = require('https');
 var chalk = require('chalk');
+var async = require('async');
 var _ = require('lodash');
 
 const routeMessages = true;
@@ -57,7 +58,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.get('/readMsg', (req, res) => {
 		fs.readFile('readMessages.html', 'utf8', (err, data) => {
 			if (err)
-				res.status(500).send(err);
+				return res.status(500).send(err);
 
 			res.send(data);
 		});
@@ -66,7 +67,13 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	/* /// INBOX REQUESTS /// */
 	if(routeMessages) {
 		app.get('/', (req, res) => {
-			res.redirect(301, '/inbox');
+//			res.redirect(301, '/inbox');
+			fs.readFile('main.html', (err, data) => {
+				if(err)
+					return res.status(500).send(err);
+				
+				res.send(data);
+			});
 		});
 
 		//	Get all messages
@@ -89,13 +96,25 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		app.get('/inbox/from',  (req, res) => {
 			console.log('/inbox/from');
 			db.collection('inbox')
-				.distinct("sender", (err, data) => {
+				.distinct("sender", (err, senderList) => {
 					if(err)
 						return res.status(500).json(err);
-					else
-						return res.status(200).json(data);
+					
+					async.map(senderList, function(sender, callback) {
+						db.collection('contacts').findOne({number: sender}, (err, contact) => {
+							if(contact)
+								return callback(null, {number: sender, name: contact.fullName});
+							
+							return callback(null, {number: sender, name: sender});
+						});
+						
+						
+					}, function(err, results) {						
+						return res.status(200).json(results);
+					});
 				});
 		});
+		
 
 		//	Get all messages from :number
 		app.get('/inbox/from/:number',  (req, res) => {
@@ -366,18 +385,13 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Retrieve contact entry
-		app.get('/contacts/:contact',  (req, res) => {
-			var searchField = /^\d+$/.test(req.params.contact) ? 'number' : 'name';
-			var searchObj = {};
-			searchObj[searchField] = req.params.contact;
-			db.collection('contacts').findOne(searchObj, (err, contact) => {
-				if(err)
-					return res.status(500).json(err);
+		app.get('/contacts/:number',  (req, res) => {
+			var number = req.params.number;
+			db.collection('contacts').findOne({number: number}, (err, contact) => {
+				if(err || !contact)
+					return res.status(404).json({result: number});
 
-				if(!contact)
-					return res.status(404).json(new Error('Contact information not found'));
-
-				res.status(200).json(mapContact(contact));
+				res.status(200).json({result: contact.name});
 			});
 		});
 
@@ -394,7 +408,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		function mapContact(c) {
 			c.url = `/contacts/${c.number}`;
-			c.senderListUrl = `/inbox/${c.number}`;
+			c.senderListUrl = `/inbox/from/${c.number}`;
 			return c;
 		}
 	}

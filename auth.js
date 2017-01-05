@@ -1,7 +1,7 @@
-var util = require('util');
+
 var authModule = require('http-auth');
 var basicAuth = authModule.basic({
-					realm: "Inbox",
+					realm: "smsneaky",
 					file:  __dirname + "/users.htaccess"
 				});
 

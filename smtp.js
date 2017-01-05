@@ -35,5 +35,5 @@ module.exports = function(_sender, _msg) {
 		var randomPrefix = (Math.random() * Number.MAX_SAFE_INTEGER) & 0xFFFF;
 		var senderSuffix = _number.replace(/^.*?(\d{4})$/, "$1");
 		return `0x${randomPrefix.toString(16)}${senderSuffix}`;
-	}	
+	}
 }
