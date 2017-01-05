@@ -68,9 +68,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	if(routeMessages) {
 		app.get('/', (req, res) => {
 //			res.redirect(301, '/inbox');
+			console.log('> Reading main.html...');
 			fs.readFile('main.html', (err, data) => {
 				if(err)
 					return res.status(500).send(err);
+				
+				console.log('> Sending to client...');
 				
 				res.send(data);
 			});
