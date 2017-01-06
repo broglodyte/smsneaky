@@ -93,30 +93,30 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			);
 		});
 
-		//	Get all senders
-		app.get('/inbox/from',  (req, res) => {
+		app.get('/inbox/from', (req, res) => {
 			console.log('/inbox/from');
-			db.collection('inbox')
-				.distinct("sender", (err, senderList) => {
-					if(err)
-						return res.status(500).json(err);
+			db.collection('inbox').find({}).sort({'timestamp': -1}).toArray(function(err, items) {
+				if(err)
+					return res.status(500).json(err);
 					
-					async.map(senderList, function(sender, callback) {
-						db.collection('contacts').findOne({number: sender}, (err, contact) => {
-							if(contact)
-								return callback(null, {number: sender, name: contact.fullName});
-							
-							return callback(null, {number: sender, name: sender});
-						});
+				var senderList = [];
+				for(var i=0; i<items.length; i++)
+					if(!_.includes(senderList, items[i].sender))
+						senderList.push(items[i].sender);
+				
+				async.map(senderList, function(sender, callback) {
+					db.collection('contacts').findOne({number: sender}, (err, contact) => {
+						if(contact)
+							return callback(null, {number: sender, name: contact.fullName});
 						
-						
-					}, function(err, results) {						
-						return res.status(200).json(results);
+						return callback(null, {number: sender, name: sender});
 					});
+				}, function(err, results) {						
+					return res.status(200).json(results);
 				});
+			});
 		});
 		
-
 		//	Get all messages from :number
 		app.get('/inbox/from/:number',  (req, res) => {
 			console.log('/inbox/from/:number');
