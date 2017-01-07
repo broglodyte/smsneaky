@@ -2,37 +2,20 @@
 <html>
  <head>
   <title>SMSneaky</title>
+  <link rel="stylesheet" type="text/css" href="/css/smsneaky.css">
   <script src="https://cdn.jsdelivr.net/async/2.0.0/async.js"></script>
   <script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA=" crossorigin="anonymous"></script>
-  <script language="JavaScript">
-	$(document).ready(function() {
-		var urlPath = '/inbox/from';
-		var convSelect = document.getElementById('convSelect');
-		
-		$.getJSON(urlPath, function(convList) {
-			var dropdownOptionsList = convList.map(function(item) {
-				var convName = item.name;
-				var newOptionElement = document.createElement('option');
-				newOptionElement.text = item.name;
-				newOptionElement.value = item.number;
-				convSelect.add(newOptionElement);
-			});
-		});
-		
-		$('#convSelect').change(function() {
-			var selectedConversation = convSelect.value;
-			alert(selectedConversation)
-		});
-	});
-  </script>
+  <script src="/js/smsneaky_client.js"></script>
  </head>
  <body>
-  <!-- <script type="text/javascript"> -->
-    
-  <!-- </script> -->
   
   <select id="convSelect">
 	<option value="">Select a conversation...</option>
+	<p>
+	<div class="mainConversationDiv">
+	
+	</div>
+	
   </select>
  </body>
 </html>

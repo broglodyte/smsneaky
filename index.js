@@ -1,25 +1,24 @@
-var https = require('https');
-var chalk = require('chalk');
-var async = require('async');
-var _ = require('lodash');
 
 const routeMessages = true;
 const routeContacts = true;
 
 require('dotenv').config();
-var util = require('util');
-var fs = require('fs');
-var path = require('path');
-var moment = require('moment-timezone');
-const crypto = require('crypto');
 
-var express = require('express');
-var auth = require('./auth');
-var sendmail = require('./smtp');
-var jsonParser = require('body-parser').json();
+const https = require('https');
+const chalk = require('chalk');
+const async = require('async');
+const _ = require('lodash');
+const util = require('util');
+const fs = require('fs');
+const path = require('path');
+const moment = require('moment-timezone');
+const express = require('express');
+const auth = require('./auth');
+const sendmail = require('./smtp');
+const jsonParser = require('body-parser').json();
 
-var mongodb = require('mongodb');
-var MongoClient = mongodb.MongoClient;
+const mongodb = require('mongodb');
+const MongoClient = mongodb.MongoClient;
 
 var db;
 
@@ -48,15 +47,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	
 	app.use(express.static('public'));
 	
-//	app.get('/readMsg', (req, res) => {
-//		fs.readFile('readMessages.html', 'utf8', (err, data) => {
-//			if (err)
-//				return res.status(500).send(err);
-//
-//			res.send(data);
-//		});
-//	});
-
 	/* /// INBOX REQUESTS /// */
 	if(routeMessages) {
 		app.get('/', (req, res) => {
@@ -95,7 +85,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		app.get('/inbox/from', (req, res) => {
 			console.log('/inbox/from');
-			db.collection('inbox').find({}).sort({'timestamp': -1}).toArray(function(err, items) {
+			db.collection('inbox').find({}).sort({timestamp: -1}).toArray(function(err, items) {
 				if(err)
 					return res.status(500).json(err);
 					
