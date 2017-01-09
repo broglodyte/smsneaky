@@ -1,11 +1,34 @@
-/* smsneaky.css */
 
-.fromMe {
-	
-	
+.conversation {
+	width: 300px;
 }
 
-.toMe {
-	
-	
+p.fromMe {
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
+	float: right;
+	max-width: 200px;
+	text-align: left;
+    padding: 6px;
+	color: #000080;
+    background-color: #DDDDFF;
+	border: 1px solid blue;
+	border-radius: 8px;
+}
+
+p.toMe {
+    box-shadow: -5px 5px 10px rgba(0, 0, 0, 0.3);
+	float: left;
+	max-width: 200px;
+	width: auto;
+	text-align: left;
+    padding: 6px;
+	color: #000080;
+	background-color: #DDFFDD;
+	border: 1px solid green;
+	border-radius: 8px;
+}
+
+.timeLabel {
+	font-style: italic;
+	font-size: 0.7em;
 }

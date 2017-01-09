@@ -13,6 +13,7 @@ function selectConversation() {
 		//	[conversation] should be a timestamp-ordered list of message objects. 
 		//	Clear [mainConversationDiv] div and add sub-divs for each:
 		
+		$("#mainConversationDiv").empty();
 		
 		
 	});
