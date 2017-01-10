@@ -24,7 +24,7 @@ var db;
 
 var app = express();
 app.set('json spaces', 2);
-
+app.disable('etag');
 	
 function main(err, db) {
 	if (err) {
@@ -43,7 +43,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("> Ready");
 
-	app.use(/^\/(inbox|sent|conversation|contacts|main).*$/, auth);
+	app.use(/^\/(inbox|sent|conversation|contacts|main|outgoing).*$/, auth);
 	
 	app.use(express.static('public'));
 	
@@ -487,6 +487,8 @@ function formatOutgoingMessageJSON(req, res, next) {
 	req.outgoing = JSON.stringify(outgoingMsg);
 	req.body.timestamp = Date.now();
 	req.body.type = 'outboundText';
+	req.body.data = msg.text;
+	delete req.body.text;
 	
 	next();
 }
