@@ -4,7 +4,7 @@
 	height: auto;
 	min-height: 100px;
 	max-height: 400px;
-	border: 1px solid #444;
+	border: 1px solid #CCC;
 	list-style-type: none;
 	overflow-y: auto;
 	overflow-x: hidden;
@@ -22,20 +22,37 @@ p.fromMe {
 	border: 1px solid blue;
 	border-radius: 8px;
 	margin-right: 10px;
+	margin-bottom: 5px;
+	margin-top: 5px;
+	overflow-wrap: break-word;
 }
 
 p.toMe {
-    box-shadow: -5px 5px 10px rgba(0, 0, 0, 0.3);
-    float: left;
-    max-width: 200px;
-    width: auto;
-    text-align: left;
-    padding: 6px;
-    color: #000080;
-    background-color: #DDFFDD;
-    border: 1px solid green;
-    border-radius: 8px;
-    margin-left: -20px;
+	height: auto;
+	box-shadow: -5px 5px 10px rgba(0, 0, 0, 0.3);
+	float: left;
+	max-width: 200px;
+	width: auto;
+	text-align: left;
+	padding: 6px;
+	color: #000080;
+	background-color: #DDFFDD;
+	border: 1px solid green;
+	border-radius: 8px;
+	margin-left: -10px;
+	margin-bottom: 5px;
+	margin-top: 5px;
+	overflow-wrap: break-word;
+}
+
+.mmsAudio {
+	max-width: 100%;
+	c: #ddffdd;
+}
+
+img.mmsImg {
+	max-width: 100%;
+    height: auto;
 }
 
 .timeLabel {

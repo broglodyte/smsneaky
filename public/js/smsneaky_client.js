@@ -19,9 +19,10 @@ function selectConversation() {
 	var conversationUrl = '/conversation/' + selectedConversation;
 	
 	$.getJSON(conversationUrl, function(conversation) {
+		console.log('Conversation length: ['+conversation.length+']');
 		//	[conversation] should be a timestamp-ordered list of message objects. 
-		//	Clear [mainConversationDiv] div and add sub-divs for each:
 		
+		//	TODO: make this conversation.forEach(fn) ?
 		for(var i=0;i<conversation.length;i++) {
 			var msgObj = conversation[i];
 			if(!msgObj.type) {
@@ -32,59 +33,79 @@ function selectConversation() {
 			
 			var pClass = msgObj.type.startsWith('outbound') ? "fromMe" : "toMe";
 			
-			var li = $("<li></li>");
+			var li = $("<li></li>");			
 			var p = $("<p></p>").addClass(pClass);
-//			p.attr({class: pClass});
-//			p.addClass(pClass);
 			
 			var time = $("<span></span>").addClass('timeLabel').text(msgObj.dateTime);
 			var br   = $("<br />");
-			var text = $("<span></span>").text(msgObj.data);
+			var data;
 			
-			p.append(time, br, text);
+			var invalid = false;
+			switch(msgObj.type) {
+				case 'inboundText':
+				case 'outboundText':
+					data = $("<span></span>").text(msgObj.data);
+					break;
+					
+				case 'inboundMedia':
+					data = $('<img>')
+						.addClass('mmsImg')
+						.attr({
+							src:	msgObj.data,
+							id:		'img_'+msgObj._id
+						});
+					break;
+					
+				case 'voiceMail':
+					data = $('<audio controls></audio>').addClass('mmsAudio');
+					data.attr({src: msgObj.data});
+					data.html($("<a></a>").attr({href: msgObj.data}).text('Download <span class="glyphicon glyphicon-volume-up"></span>'));
+					break;
+				default:
+					console.log('Unknown message type: "'+msgObj.type+'"');
+					invalid = true;
+					break;
+			}
+			
+			if(invalid)
+				continue;
+			
+			p.append(time, br, data);
 			li.append(p);
-			var newBlob = textTemplate.replace(/__([A-Z]+)__/g, function(match, p1) {
-				console.log("match: " + match);
-				console.log("p1:    " + p1);
-				switch(p1) {
-					case "PCLASS":
-						return pClass;
-					case "DATETIME":
-						return msgObj.dateTime;
-					case "TEXT":
-						return msgObj.data;
-					default:
-						return "";
-				}
-			});
-			$("ul#conversation").append(newBlob);
+//			var newBlob = textTemplate.replace(/__([A-Z]+)__/g, function(match, p1) {
+//				console.log("match: " + match);
+//				console.log("p1:    " + p1);
+//				switch(p1) {
+//					case "PCLASS":
+//						return pClass;
+//					case "DATETIME":
+//						return msgObj.dateTime;
+//					case "TEXT":
+//						return msgObj.data;
+//					default:
+//						return "";
+//				}
+//			});
+			$("ul#conversation").append(li);
 		}
 	});
 }
-/*
 
-<li>
-	<p class="fromMe">
-		<span class="timeLabel">1:46:09 PM</span>
-		<br />Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-	</p>
-</li>
-*/
 
 function populateConversationList() {
-	var urlPath = '/inbox/from';
-	var convSelect = document.getElementById('convSelect');
+	var urlPath = '/conversation';
+	var convSelect = $("#convSelect");
 //	clearConversationList(convSelect);
 //	$("#convSelect").empty();
-	$("#convSelect").children('option:not(:first)').remove();
 	
 	$.getJSON(urlPath, function(convList) {
+		convSelect.children('option:not(:first)').remove();
 		var dropdownOptionsList = convList.map(function(item) {
-			var convName = item.name;
-			var newOptionElement = document.createElement('option');
-			newOptionElement.text = item.name;
-			newOptionElement.value = item.number;
-			convSelect.add(newOptionElement);
+			var convName = item.name || item.number;
+			var newOptionElement = $('<option></option>').text(convName).attr({value: item.number});
+//			newOptionElement.text = item.name;
+//			newOptionElement.value = item.number;
+			convSelect.append(newOptionElement);
 		});
 	});
 }
