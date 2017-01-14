@@ -13,14 +13,11 @@ function selectConversation() {
 		//	[conversation] should be a timestamp-ordered list of message objects. 
 		//	Clear [mainConversationDiv] div and add sub-divs for each:
 		
-		$("#mainConversation").empty();
+		$("#mainConversationDiv").empty();
 		
-		for (var i=0; i< conversation.length; i++) {
-			var txtObj = conversation[i];
-			var txtBlob = $("tr");
-			var txtTd = $("td");
-			var p = $("p");
-			p.attr({class: })
+		for(var msg in conversation) {
+			
+			
 		}
 		
 	});

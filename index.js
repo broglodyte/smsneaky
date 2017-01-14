@@ -285,6 +285,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				m.msgUrl = `/inbox/msg/${m._id}`;
 				m.fromUrl = `/inbox/from/${m.sender}`;
 			}
+			if(m.text)
+				m.data = m.text;
+			
 			m.dateTime = moment(m.timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
 			
 			return m;
@@ -448,25 +451,6 @@ function formatIncomingMessageJSON(req, res, next) {
 	}
 }
 
-function formatContactInfoJSON(req, res, next) {
-	if (!req.body)
-		return res.status(415).json(new Error('Invalid JSON request body'));
-
-	try {
-		var jsonData = {
-			number:		req.body.number.replace(/\D/g, ''),
-			name:   	req.body.name.replace(/\W/g, ''),
-			fullName: 	req.body.fullName || req.body.name
-		};
-		req.json = jsonData;
-
-		next();
-	}
-	catch (err) {
-		return res.status(400).json(err);
-	}
-}
-
 function formatOutgoingMessageJSON(req, res, next) {
 	if(!req.body)
 		return res.status(415).json({error: "Invalid JSON request data"});
@@ -489,6 +473,25 @@ function formatOutgoingMessageJSON(req, res, next) {
 	req.body.type = 'outboundText';
 	
 	next();
+}
+
+function formatContactInfoJSON(req, res, next) {
+	if (!req.body)
+		return res.status(415).json(new Error('Invalid JSON request body'));
+
+	try {
+		var jsonData = {
+			number:		req.body.number.replace(/\D/g, ''),
+			name:   	req.body.name.replace(/\W/g, ''),
+			fullName: 	req.body.fullName || req.body.name
+		};
+		req.json = jsonData;
+
+		next();
+	}
+	catch (err) {
+		return res.status(400).json(err);
+	}
 }
 
 function createError(code, message) {
