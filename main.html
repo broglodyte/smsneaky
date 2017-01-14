@@ -9,15 +9,18 @@
 		<script src="/js/smsneaky_client.js"></script>
 	</head>
 	<body>
-
-		<select id="convSelect">
-			<option value="">Select ...</option>
-		</select>
-		
-		
-		<ul id="conversation">
-
-		</ul>
-
+		<div id="mainDiv">
+			<input list="contacts" name="contact" id="contact">
+			<datalist id="contacts">
+				<option value="Select or enter new contact">Test</option>
+			</datalist>
+			<!-- <select id="convSelect">
+				<option value="">Select ...</option>
+			</select> -->
+			<div id="convDiv">
+				
+			</div>
+			<input type="text" id="textEntry" name="textEntry">
+		</div>
 	</body>
 </html>

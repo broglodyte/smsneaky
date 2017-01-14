@@ -2,17 +2,18 @@
 
 $(document).ready(function() {
 	populateConversationList();
-	$('#convSelect').change(selectConversation);
+	$("#convSelect").change(selectConversation);
+	$("input#textEntry").keydown(sendMessageDelegate);
 	setInterval(populateConversationList, 15000);
 });
 
 
 
 function selectConversation() {	
-	var textTemplate = '<li><p class="__PCLASS__"><span class="timeLabel">__DATETIME__</span><br/><span>__TEXT__</span></p></li>';
-	$("ul#conversation").empty();
+	var convPanel = $("#conversation");
+	convPanel.empty();
 	
-	var selectedConversation = convSelect.value;
+	var selectedConversation = $("select#convSelect")[0].value;
 	if(!selectedConversation || !selectedConversation.length)
 		return;
 	
@@ -20,6 +21,7 @@ function selectConversation() {
 	
 	$.getJSON(conversationUrl, function(conversation) {
 		console.log('Conversation length: ['+conversation.length+']');
+		$("input#textEntry").clear();
 		//	[conversation] should be a timestamp-ordered list of message objects. 
 		
 		//	TODO: make this conversation.forEach(fn) ?
@@ -33,7 +35,9 @@ function selectConversation() {
 			
 			var pClass = msgObj.type.startsWith('outbound') ? "fromMe" : "toMe";
 			
-			var li = $("<li></li>");			
+//			var tr = $("<tr></tr>");
+//			var td = $("<td></td>");
+			var newDiv = $("<div>").addClass("msgRowDiv");
 			var p = $("<p></p>").addClass(pClass);
 			
 			var time = $("<span></span>").addClass('timeLabel').text(msgObj.dateTime);
@@ -71,41 +75,74 @@ function selectConversation() {
 				continue;
 			
 			p.append(time, br, data);
-			li.append(p);
-//			var newBlob = textTemplate.replace(/__([A-Z]+)__/g, function(match, p1) {
-//				console.log("match: " + match);
-//				console.log("p1:    " + p1);
-//				switch(p1) {
-//					case "PCLASS":
-//						return pClass;
-//					case "DATETIME":
-//						return msgObj.dateTime;
-//					case "TEXT":
-//						return msgObj.data;
-//					default:
-//						return "";
-//				}
-//			});
-			$("ul#conversation").append(li);
+//			td.html(p);
+//			tr.html(td);
+			newDiv.append(p);
+			$("convDiv").append(newDiv);
 		}
+		
 	});
+}
+
+function sendMessageDelegate(e) {
+	if(e.which == 13)
+		sendMessage();
+}
+
+function sendMessage() {
+	var msg = $("input#textEntry").val();
+	var recip = $("input#contact").val();	
+	
+	if(!msg)
+		return;
+	
+	if(!recip)
+		return alert('Please select a contact');
+	
+	var msgBlob = {
+		toNumber:	recip,
+		text:		msg		
+	};
+	var ajaxParams = {
+		url: "/outgoing",
+		method: "POST",
+		username: "d",
+		password: "d",
+		headers: {
+			"content-type": "application/json",
+			"cache-control": "no-cache"
+		},
+		data: JSON.stringify(msgBlob),
+		success: function(data, status) {
+			console.log('Data:   '+data);
+			console.log('Status: '+status);
+			selectConversation();
+		},
+		error: function(jqXHR, status, err) {
+			alert(status + '\n' + err);
+		}
+	}
+	
+//	console.log(ajaxParams.data);
+	$.ajax(msgBlob);
 }
 
 
 function populateConversationList() {
-	var urlPath = '/conversation';
-	var convSelect = $("#convSelect");
 //	clearConversationList(convSelect);
 //	$("#convSelect").empty();
 	
+		var urlPath = '/conversation';
 	$.getJSON(urlPath, function(convList) {
-		convSelect.children('option:not(:first)').remove();
+//		convSelect.children('option:not(:first)').remove();
+		var contactDataList = $("datalist#contacts");
+		contactDataList.empty();
 		var dropdownOptionsList = convList.map(function(item) {
 			var convName = item.name || item.number;
-			var newOptionElement = $('<option></option>').text(convName).attr({value: item.number});
+			var newOptionElement = $('<option>').text(convName).attr({value: item.number});
 //			newOptionElement.text = item.name;
 //			newOptionElement.value = item.number;
-			convSelect.append(newOptionElement);
+			contactDataList.append(newOptionElement);
 		});
 	});
 }

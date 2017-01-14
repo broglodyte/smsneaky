@@ -1,15 +1,34 @@
+#mainDiv {
+	width: 350px;
+	height: auto;
+	padding: 6px;
+	border: 1px solid black;
+}
 
-#conversation {
-	width: 300px;
+div#convDiv {
+	width: 100%;
 	height: auto;
 	min-height: 100px;
-	max-height: 400px;
+	max-height: 500px;
+	border: 1px solid gray;
+}
+
+div.msgRowDiv {
+	width: 100%;
+	
+}
+
+/* table#convTable {
+	width: 100%;
+	height: auto;
+	min-height: 100px;
+	max-height: 500px;
 	border: 1px solid #CCC;
-	list-style-type: none;
+	/* list-style-type: none; 
 	overflow-y: auto;
 	overflow-x: hidden;
-	margin-left: initial;
-}
+	margin: auto;
+} */
 
 p.fromMe {
     box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
@@ -39,15 +58,36 @@ p.toMe {
 	background-color: #DDFFDD;
 	border: 1px solid green;
 	border-radius: 8px;
-	margin-left: -10px;
+	/* margin-left: -10px; */
 	margin-bottom: 5px;
 	margin-top: 5px;
 	overflow-wrap: break-word;
 }
+input#contact {
+	border: 1px solid gray;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #f1f1f1;
+	margin: auto;
+}
+input[type=text] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 1px 0;
+    box-sizing: border-box;
+}
+
+input[type=text]:focus,
+select:focus {
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+}
 
 .mmsAudio {
 	max-width: 100%;
-	c: #ddffdd;
+	color: #ddffdd;
+	background-color: #ddffdd;
 }
 
 img.mmsImg {
