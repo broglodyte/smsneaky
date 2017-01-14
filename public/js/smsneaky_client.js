@@ -138,7 +138,7 @@ function populateConversationList() {
 		contactDataList.empty();
 		var dropdownOptionsList = convList.map(function(item) {
 			var convName = item.name || item.number;
-			var newOptionElement = $('<option>').text(convName).attr({value: item.number});
+			var newOptionElement = $('<option>').text(item.number).attr({value: item.name || ''});
 //			newOptionElement.text = item.name;
 //			newOptionElement.value = item.number;
 			contactDataList.append(newOptionElement);
