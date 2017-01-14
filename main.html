@@ -3,19 +3,24 @@
 	<head>
 		<title>SMSneaky</title>
 		<link rel="stylesheet" type="text/css" href="/css/smsneaky.css"/>
-		<script src="https://cdn.jsdelivr.net/async/2.0.0/async.js"/>
-		<script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA=" crossorigin="anonymous"/>
-		<script src="/js/smsneaky_client.js"/>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://cdn.jsdelivr.net/async/2.0.0/async.js"></script>
+		<script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA=" crossorigin="anonymous"></script>
+		<script src="/js/smsneaky_client.js"></script>
 	</head>
 	<body>
-
-		<select id="convSelect">
-			<option value="">Select a conversation...</option>
-		</select>
-		<br/>
-		<table class="mainConversation">
-
-		</table>
-
+		<div id="mainDiv">
+			<input list="contacts" name="contact" id="contact">
+			<datalist id="contacts">
+				<option value="Select or enter new contact">Test</option>
+			</datalist>
+			<!-- <select id="convSelect">
+				<option value="">Select ...</option>
+			</select> -->
+			<div id="convDiv">
+				
+			</div>
+			<input type="text" id="textEntry" name="textEntry">
+		</div>
 	</body>
 </html>

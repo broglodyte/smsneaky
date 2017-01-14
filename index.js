@@ -24,7 +24,7 @@ var db;
 
 var app = express();
 app.set('json spaces', 2);
-
+app.disable('etag');
 	
 function main(err, db) {
 	if (err) {
@@ -43,7 +43,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("> Ready");
 
-	app.use(/^\/(inbox|sent|conversation|contacts|main).*$/, auth);
+	app.use(/^\/(inbox|sent|conversation|contacts|main|outgoing).*$/, auth);
 	
 	app.use(express.static('public'));
 	
@@ -122,7 +122,102 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				}
 			);
 		});
-		
+				
+		app.get('/conversation', (req, res) => {
+			console.log('/conversation');
+			var theirNumber = req.params.number;
+			
+			//	first get msgs from [everybody] to me:
+			db.collection('inbox')
+				.find({})
+				.map((m) => {
+					m.contact = m.sender;
+					return m;
+				})
+				.toArray((err, fromSender) => {
+					if(err)
+						return res.status(404).json(err);
+					
+					//	now get msgs from me to [everybody]
+					db.collection('sent')
+						.find({})
+						.map(function(m) {
+							m.contact = m.toNumber;
+							return m;
+						})
+						.toArray((err, fromMe) => {
+							if(err)
+								return res.status(404).json(err);
+							
+							//	then put them all together in one array and sort it by timestamp
+							var contactList = _.map(_.uniqBy(_.sortBy(_.concat(fromSender, fromMe), 'timestamp'), 'contact'), (m) => {return m.contact});
+//							var contactsWithTimestamps = _.map(allMessages, function(msg) {return {contact: msg.contact, timestamp: msg.timestamp}});
+//							var justContactNumbers = _.map(allMessages, function(msg) {return msg.contact});
+//							console.log(_.join(justTimeStamps, '\n'));
+//							console.log('Total entries: '+ justContactNumbers.length);
+							
+//							justContactNumbers = _.uniq(justContactNumbers);
+//							console.log('Unique:        '+ justContactNumbers.length)
+//							console.log(_.join(justContactNumbers, '\n'));
+							
+//							checkTimestamps(contactsWithTimestamps);
+							
+							//	filter down to list of unique phone numbers
+//							var contactList = _.uniqBy(contactsWithTimestamps, 'contact');		//[];
+//							for(var i=0; i<contactsWithTimestamps.length; i++) {
+//								var ts = contactsWithTimestamps[i].timestamp,
+//									cn = contactsWithTimestamps[i].contact,
+//									next_ts;
+//								
+//								if(i<contactsWithTimestamps.length-1) {
+//									next_ts = contactsWithTimestamps[i+1].timestamp;
+//									if(next_ts < ts)
+//										console.log(`ERROR: timestamps not sorted correctly at index [${i}] !`);
+//								}								
+//								
+//								if(!_.includes(contactList, contactsWithTimestamps[i].contact))
+//									contactList.push(contactsWithTimestamps[i].contact);
+//							}
+
+							var fnList = contactList.map((n) => {return lookupContactName.bind(undefined, n)});		
+							async.series(fnList, (err, results) => {
+								if(err)
+									return res.status(500).json(err);
+								
+								return res.json(results)
+							});
+							
+//							async.map(contactList, function(contact, callback) {
+//								db.collection('contacts').findOne({number: contact}, (err, contactEntry) => {
+//									if(contactEntry)
+//										return callback(null, {number: contact, name: contactEntry.name});
+//									
+//									return callback(null, {number: contact});
+//								});
+//							}, function(err, results) {						
+//								return res.status(200).json(_.reverse(results));
+//							});
+							
+							function lookupContactName(_number, callback) {
+								db.collection('contacts').findOne({number: _number}, (err, contactEntry) => {
+									if(contactEntry)
+										return callback(null, {number: _number, name: contactEntry.name});
+									
+									return callback(null, {number: _number});
+								});
+							}
+							
+							function checkTimestamps(_list) {
+								for(var i=1;i<_list.length;i++)
+									if(_list[i].timestamp < _list[i-1].timestamp)
+										console.log(`Error: [${_list[i].timestamp}] < [${_list[i-1].timestamp}] !!\nIndex: [${i}]`);
+							}
+						}
+					);
+				}
+			);
+		});
+				
 		app.get('/conversation/:number', (req, res) => {
 			console.log('/conversation/:number');
 			var theirNumber = req.params.number;
@@ -154,6 +249,21 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 					);
 				}
 			);
+		});
+		
+		app.get('/all', (req, res) => {
+			console.log('/all');
+			
+			db.collection('inbox').find({}).toArray((err1, inbox) => {				
+				db.collection('sent').find({}).toArray((err2, sent) => {
+					if(err1 || err2)
+						return res.status(500).json({error1: err1, error2: err2});
+					
+					
+				});
+				
+			});
+			
 		});
 
 		//	Get specific message by :msgID
@@ -221,7 +331,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			};
 			
 			var postReq = https.request(reqOptions, (resFromBurner) => {
-				console.log(`Outgoing message: ${resFromBurner.statusCode}`);
+				console.log(` > Outgoing message: ${resFromBurner.statusCode}`);
 				resFromBurner.setEncoding('utf8');
 				var chunky = '';
 				
@@ -268,9 +378,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				var ip = req.connection.remoteAddress;
 				var len = req.get('Content-Length');
 				
-				console.log(`Incoming message via [${ip}]: ${len} bytes.`);
+				console.log(` > Incoming message via [${ip}]: ${len} bytes.`);
 				
-				sendmail(req.incoming.sender, req.incoming.data);
+//				sendmail(req.incoming.sender, req.incoming.data);
 	
 				return res.status(201).json(r);
 			});
@@ -471,6 +581,8 @@ function formatOutgoingMessageJSON(req, res, next) {
 	req.outgoing = JSON.stringify(outgoingMsg);
 	req.body.timestamp = Date.now();
 	req.body.type = 'outboundText';
+	req.body.data = msg.text;
+	delete req.body.text;
 	
 	next();
 }
