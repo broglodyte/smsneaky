@@ -563,7 +563,7 @@ function formatIncomingMessageJSON(req, res, next) {
 
 function formatOutgoingMessageJSON(req, res, next) {
 	if(!req.body)
-		return res.status(415).json({error: "Invalid JSON request data"});
+		return res.status(415).json({error: "Missing JSON request data"});
 	
 	var msg = req.body;
 	

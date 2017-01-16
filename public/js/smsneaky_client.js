@@ -2,18 +2,18 @@
 
 $(document).ready(function() {
 	populateConversationList();
-	$("#convSelect").change(selectConversation);
+	$("input#contact").change(selectConversation);
 	$("input#textEntry").keydown(sendMessageDelegate);
-	setInterval(populateConversationList, 15000);
+	//setInterval(populateConversationList, 15000);
 });
 
 
 
 function selectConversation() {	
-	var convPanel = $("#conversation");
+	var convPanel = $("div#convDiv");
 	convPanel.empty();
 	
-	var selectedConversation = $("select#convSelect")[0].value;
+	var selectedConversation = $("input#contact").val();
 	if(!selectedConversation || !selectedConversation.length)
 		return;
 	
@@ -21,7 +21,7 @@ function selectConversation() {
 	
 	$.getJSON(conversationUrl, function(conversation) {
 		console.log('Conversation length: ['+conversation.length+']');
-		$("input#textEntry").clear();
+		$("input#textEntry").val('');
 		//	[conversation] should be a timestamp-ordered list of message objects. 
 		
 		for(var i=0;i<conversation.length;i++) {
@@ -76,8 +76,8 @@ function selectConversation() {
 			p.append(time, br, data);
 //			td.html(p);
 //			tr.html(td);
-			newDiv.append(p);
-			$("convDiv").append(newDiv);
+			newDiv.prepend(p);
+			$("div#convDiv").append(newDiv);
 		}
 		
 	});
@@ -102,28 +102,35 @@ function sendMessage() {
 		toNumber:	recip,
 		text:		msg		
 	};
-	var ajaxParams = {
-		url: "/outgoing",
-		method: "POST",
-		username: "d",
-		password: "d",
-		headers: {
-			"content-type": "application/json",
-			"cache-control": "no-cache"
-		},
-		data: JSON.stringify(msgBlob),
-		success: function(data, status) {
-			console.log('Data:   '+data);
-			console.log('Status: '+status);
-			selectConversation();
-		},
-		error: function(jqXHR, status, err) {
-			alert(status + '\n' + err);
-		}
-	}
+	// var ajaxParams = {
+		// url: "/outgoing",
+		// method: "POST",
+		// username: "d",
+		// password: "d",
+		// headers: {
+			// "content-type": "application/json",
+			// "cache-control": "no-cache"
+		// },
+		// data: JSON.stringify(msgBlob),
+		// success: function(data, status) {
+			// console.log('Data:   '+data);
+			// console.log('Status: '+status);
+			// selectConversation();
+		// },
+		// error: function(jqXHR, status, err) {
+			// alert(status + '\n' + err);
+		// }
+	// }
 	
 //	console.log(ajaxParams.data);
-	$.ajax(msgBlob);
+	// $.ajax(msgBlob);
+	$.post("/outgoing", msgBlob)
+	.done(function(data) {
+		console.log('Returned: ' + data);
+		$("input#textEntry").val('');
+	}).fail(function(err) {
+		console.log('Error:   ' + err);
+	});
 }
 
 
@@ -137,8 +144,7 @@ function populateConversationList() {
 		var contactDataList = $("datalist#contacts");
 		contactDataList.empty();
 		var dropdownOptionsList = convList.map(function(item) {
-			var convName = item.name || item.number;
-			var newOptionElement = $('<option>').text(item.number).attr({value: item.name || ''});
+			var newOptionElement = $('<option>').text(item.name || '?').attr({value: item.number});
 //			newOptionElement.text = item.name;
 //			newOptionElement.value = item.number;
 			contactDataList.append(newOptionElement);
