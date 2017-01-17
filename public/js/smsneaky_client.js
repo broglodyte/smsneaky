@@ -1,19 +1,34 @@
 //	smsneaky_client.js
 
+var convDivPanel = "div#convDiv";
+var contactInput = "input#contact";
+var messageInput = "input#textEntry";
+
 $(document).ready(function() {
+	$.ajaxSetup({contentType: "application/json; charset=utf-8"});
 	populateConversationList();
-	$("input#contact").change(selectConversation);
-	$("input#textEntry").keydown(sendMessageDelegate);
+	$(contactInput).change(selectConversation);
+	$(contactInput).keyup(function(e) {
+		if(e.keyCode == 27) {
+			$(contactInput).val('');
+			$(convDivPanel).empty();
+		}
+		if(e.keyCode == 13) {
+			selectConversation();
+		}
+	});
+	$(messageInput).keydown(handleMessageInput);
+	
 	//setInterval(populateConversationList, 15000);
 });
 
 
 
 function selectConversation() {	
-	var convPanel = $("div#convDiv");
+	var convPanel = $(convDivPanel);
 	convPanel.empty();
 	
-	var selectedConversation = $("input#contact").val();
+	var selectedConversation = $(contactInput).val();
 	if(!selectedConversation || !selectedConversation.length)
 		return;
 	
@@ -21,76 +36,87 @@ function selectConversation() {
 	
 	$.getJSON(conversationUrl, function(conversation) {
 		console.log('Conversation length: ['+conversation.length+']');
-		$("input#textEntry").val('');
+		$(messageInput).val('');
 		//	[conversation] should be a timestamp-ordered list of message objects. 
-		
-		for(var i=0;i<conversation.length;i++) {
-			var msgObj = conversation[i];
-			if(!msgObj.type) {
-				console.log('msgObj:');
-				console.log(msgObj);
-				continue;
-			}
-			
-			var pClass = msgObj.type.startsWith('outbound') ? "fromMe" : "toMe";
-			
-//			var tr = $("<tr></tr>");
-//			var td = $("<td></td>");
-			var newDiv = $("<div>").addClass("msgRowDiv");
-			var p = $("<p></p>").addClass(pClass);
-			
-			var time = $("<span></span>").addClass('timeLabel').text(msgObj.dateTime);
-			var br   = $("<br>");
-			var data;
-			
-			var invalid = false;
-			switch(msgObj.type) {
-				case 'inboundText':
-				case 'outboundText':
-					data = $("<span></span>").text(msgObj.data);
-					break;
-					
-				case 'inboundMedia':
-					data = $('<img>')
-						.addClass('mmsImg')
-						.attr({
-							src:	msgObj.data,
-							id:		'img_'+msgObj._id
-						});
-					break;
-					
-				case 'voiceMail':
-					data = $('<audio controls></audio>').addClass('mmsAudio');
-					data.attr({src: msgObj.data});
-					data.html($("<a></a>").attr({href: msgObj.data}).text('Download <span class="glyphicon glyphicon-volume-up"></span>'));
-					break;
-				default:
-					console.log('Unknown message type: "'+msgObj.type+'"');
-					invalid = true;
-					break;
-			}
-			
-			if(invalid)
-				continue;
-			
-			p.append(time, br, data);
-//			td.html(p);
-//			tr.html(td);
-			newDiv.prepend(p);
-			$("div#convDiv").append(newDiv);
-		}
-		
+		loadConversation(conversation);
 	});
 }
 
-function sendMessageDelegate(e) {
+
+
+function loadConversation(msgArray) {
+	$(convDiv).empty();
+	
+	for(var i=0;i<msgArray.length;i++) {
+//		var msgObj = msgArray[i];
+		appendMessageToConversation(msgArray[i])
+	}
+}
+
+function appendMessageToConversation(msgObj) {
+	if(!msgObj.type) {
+		console.log('msgObj:');
+		console.log(msgObj);
+		return;
+	}
+	
+	var msgID = 'msg_' + msgObj._id;
+	var pClass = msgObj.type.startsWith('outbound') ? "fromMe" : "toMe";			
+	var newDiv = $("<div>").addClass("msgRowDiv").attr({id: msgID});
+	var p = $("<p></p>").addClass(pClass);
+	
+	var time = $("<span></span>").addClass('timeLabel').text(msgObj.dateTime);
+	var br   = $("<br>");
+	var data;
+	
+	var invalid = false;
+	switch(msgObj.type) {
+		case 'inboundText':
+		case 'outboundText':
+			data = $("<span></span>").text(msgObj.data);
+			break;
+			
+		case 'inboundMedia':
+			data = $('<img>')
+				.addClass('mmsImg')
+				.attr({
+					src:	msgObj.data,
+					id:		'img_'+msgObj._id
+				});
+			break;
+			
+		case 'voiceMail':
+			data = $('<audio controls></audio>').addClass('mmsAudio');
+			data.attr({src: msgObj.data});
+			data.html($("<a></a>").attr({href: msgObj.data}).text('Download <span class="glyphicon glyphicon-volume-up"></span>'));
+			break;
+		default:
+			console.log('Unknown message type: "'+msgObj.type+'"');
+			invalid = true;
+			break;
+	}
+	
+	if(!invalid) {
+		p.append(time, br, data);
+		newDiv.append(p).hide();
+		$(convDivPanel).append(newDiv);
+		document.getElementById(msgID).scrollIntoView();
+		newDiv.fadeIn({queue: true});
+		
+		$(convDivPanel).animate({ scrollTop: $(convDivPanel).prop("scrollHeight")}, 100);	
+	}
+}
+
+function handleMessageInput(e) {
 	if(e.which == 13)
 		sendMessage();
+	if(e.which == 27)
+		$(messageInput).val('');
 }
 
 function sendMessage() {
-	var msg = $("input#textEntry").val();
-	var recip = $("input#contact").val();	
+	var msg = $(messageInput).val();
+	var recip = $(contactInput).val();	
 	
 	if(!msg)
 		return;
@@ -102,32 +128,12 @@ function sendMessage() {
 		toNumber:	recip,
 		text:		msg		
 	};
-	// var ajaxParams = {
-		// url: "/outgoing",
-		// method: "POST",
-		// username: "d",
-		// password: "d",
-		// headers: {
-			// "content-type": "application/json",
-			// "cache-control": "no-cache"
-		// },
-		// data: JSON.stringify(msgBlob),
-		// success: function(data, status) {
-			// console.log('Data:   '+data);
-			// console.log('Status: '+status);
-			// selectConversation();
-		// },
-		// error: function(jqXHR, status, err) {
-			// alert(status + '\n' + err);
-		// }
-	// }
-	
-//	console.log(ajaxParams.data);
-	// $.ajax(msgBlob);
-	$.post("/outgoing", msgBlob)
+	$.post("/outgoing", JSON.stringify(msgBlob))
 	.done(function(data) {
-		console.log('Returned: ' + data);
-		$("input#textEntry").val('');
+		console.log('Message sent');
+		appendMessageToConversation(data);
+		$(messageInput).val('');
+		
 	}).fail(function(err) {
 		console.log('Error:   ' + err);
 	});
@@ -135,11 +141,7 @@ function sendMessage() {
 
 
 function populateConversationList() {
-//	clearConversationList(convSelect);
-//	$("#convSelect").empty();
-	
-		var urlPath = '/conversation';
-	$.getJSON(urlPath, function(convList) {
+	$.getJSON('/conversation', function(convList) {
 //		convSelect.children('option:not(:first)').remove();
 		var contactDataList = $("datalist#contacts");
 		contactDataList.empty();
@@ -150,4 +152,10 @@ function populateConversationList() {
 			contactDataList.append(newOptionElement);
 		});
 	});
+}
+
+function embiggenPicture(imgID) {
+	//	...
+	var docWidth = $("div#mainDiv").width();
+	var docHeight = $("div#mainDiv").height();
 }

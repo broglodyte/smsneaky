@@ -135,8 +135,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 					return m;
 				})
 				.toArray((err, fromSender) => {
-					if(err)
-						return res.status(404).json(err);
+//					if(err)
+//						return res.status(404).json(err);
 					
 					//	now get msgs from me to [everybody]
 					db.collection('sent')
@@ -199,19 +199,19 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 //							});
 							
 							function lookupContactName(_number, callback) {
-								db.collection('contacts').findOne({number: _number}, (err, contactEntry) => {
-									if(contactEntry)
-										return callback(null, {number: _number, name: contactEntry.name});
+								db.collection('contacts').findOne({number: _number}, (err, c) => {
+//									if(c)
+										return callback(null, {number: _number, name: c?c.name:_number});
 									
-									return callback(null, {number: _number});
+//									return callback(null, {number: _number});
 								});
 							}
 							
-							function checkTimestamps(_list) {
-								for(var i=1;i<_list.length;i++)
-									if(_list[i].timestamp < _list[i-1].timestamp)
-										console.log(`Error: [${_list[i].timestamp}] < [${_list[i-1].timestamp}] !!\nIndex: [${i}]`);
-							}
+//							function checkTimestamps(_list) {
+//								for(var i=1;i<_list.length;i++)
+//									if(_list[i].timestamp < _list[i-1].timestamp)
+//										console.log(`Error: [${_list[i].timestamp}] < [${_list[i-1].timestamp}] !!\nIndex: [${i}]`);
+//							}
 						}
 					);
 				}
@@ -243,7 +243,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 							console.log(` > To:   ${fromMe.length}`);
 							
 							var allMessages = _.sortBy(_.concat(fromSender, fromMe), 'timestamp');
-							_.reverse(allMessages);
+//							_.reverse(allMessages);
 							res.json(allMessages);
 						}
 					);
@@ -257,8 +257,27 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			db.collection('inbox').find({}).toArray((err1, inbox) => {				
 				db.collection('sent').find({}).toArray((err2, sent) => {
 					if(err1 || err2)
-						return res.status(500).json({error1: err1, error2: err2});
+						return res.status(500).json({inboxError: err1, sentError: err2});
 					
+					var allMessages = _.concat(inbox, sent);
+					var allMessagesSortedByTimestamp = _.sortBy(allMessages, 'timestamp');
+					var allMessagesSortedAndNormalized = allMessagesSortedByTimestamp.map((m) => {
+						m.dateTime = getShortDateTime(m.timestamp);
+						
+						if(m.toNumber) 
+							m.contact = m.toNumber;
+						if(m.sender)
+							m.contact = m.sender;
+						
+						if(m.contact)
+							return m;
+					});
+					var allMessagesSortedAndNormalizedAndFiltered = allMessagesSortedAndNormalized.filter(m => !!m);
+					var invalidMessages = allMessagesSortedAndNormalized.length - allMessagesSortedAndNormalizedAndFiltered.length;
+					if(invalidMessages)
+						console.log(`Invalid messages: [${invalidMessages}]`);
+					
+					res.json(allMessagesSortedAndNormalizedAndFiltered);
 					
 				});
 				
@@ -349,19 +368,31 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 						res.set(headerFields[i], resFromBurner.headers[headerFields[i]]);
 					
 					db.collection('sent').insertOne(req.body, (err, r) => {
-						if(err)
-							// return res.status(500).json(err);
+						if(err) {
 							console.log(`Error inserting outgoing record: ${err}`);
-						else
-							console.log('Outgoing text logged to database');
+							return res.status(500).json({error: err});
+						}
+						
+						console.log('> Outgoing text logged to database');
+						
+						// lookup the newly inserted sent text record and send to client for insertion into UX:
+						db.collection('sent').findOne({_id: ObjectID(r.insertedId)}, (err, textRecord) => {
+							if(err) {
+								console.log(`> Unable to retrieve inserted record: ${err}`);
+								return res.status(500).json({error: err, status: `Unable to retrieve inserted record`});
+							}
+							
+							res.status(201).json(textRecord);
+						});
+					
 					});
 					
-					res.status(resFromBurner.statusCode).send(chunky);
+//					res.status(resFromBurner.statusCode).send(chunky);
 				});
 				
 			});
 			postReq.on('error', (e) => {
-			  console.log(`problem with request: ${e.message}`);
+			  console.log(`> !! Problem with request: ${e.message}`);
 			});
 			
 			postReq.write(req.outgoing);
@@ -398,7 +429,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			if(m.text)
 				m.data = m.text;
 			
-			m.dateTime = moment(m.timestamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
+			m.dateTime = getFormattedDateTime(m.timestamp);
 			
 			return m;
 		}
@@ -604,6 +635,14 @@ function formatContactInfoJSON(req, res, next) {
 	catch (err) {
 		return res.status(400).json(err);
 	}
+}
+
+function getShortDateTime(tstamp) {
+	return moment(tstamp).tz("America/Winnipeg").format("YYYY.MM.DD_HH:mm:ss");
+}
+
+function getFormattedDateTime(tstamp) {
+	return moment(tstamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
 }
 
 function createError(code, message) {
