@@ -19,6 +19,7 @@ const jsonParser = require('body-parser').json();
 
 const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
+const ObjectID = mongodb.ObjectID;
 
 var db;
 
@@ -70,8 +71,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		//	Get all messages
 		app.get('/inbox',  (req, res) => {
 			console.log('/inbox');
-			db.collection('inbox')
-				.find({})
+			db.collection('messages')
+				.find({type: ""})
 				.map(mapMsg)
 				.sort({timestamp: -1})
 				.toArray((err, items) => {
@@ -321,7 +322,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				.updateOne(
 					{_id	: new mongodb.ObjectID(req.params.msgID)},	//	filter object
 					{$set	: { readFlag: true }},
-					{upsert: false},
+					{upsert	: false},
 					(err, result) => {
 						if(err)
 							return res.status(500).json(err);
@@ -350,7 +351,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			};
 			
 			var postReq = https.request(reqOptions, (resFromBurner) => {
-				console.log(` > Outgoing message: ${resFromBurner.statusCode}`);
+				console.log(`> Outgoing message: ${resFromBurner.statusCode}`);
 				resFromBurner.setEncoding('utf8');
 				var chunky = '';
 				
@@ -361,33 +362,28 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				resFromBurner.on('end', () => {
 					var sendSuccess = JSON.parse(chunky).success;
 					var sendSuccessString = sendSuccess ? chalk.green('Success') : chalk.red('FAILURE');
-					console.log(`Send successful: ${sendSuccessString}`);
+					console.log(`> Send successful: ${sendSuccessString}`);
 					
 					var headerFields = Object.keys(resFromBurner.headers);
 					for (i=0; i<headerFields.length; i++)
 						res.set(headerFields[i], resFromBurner.headers[headerFields[i]]);
 					
-					db.collection('sent').insertOne(req.body, (err, r) => {
+					db.collection('messages').insertOne(req.body, (err, r) => {
 						if(err) {
-							console.log(`Error inserting outgoing record: ${err}`);
+							console.log(`> !! Error inserting outgoing record: ${err}`);
 							return res.status(500).json({error: err});
 						}
 						
-						console.log('> Outgoing text logged to database');
-						
 						// lookup the newly inserted sent text record and send to client for insertion into UX:
-						db.collection('sent').findOne({_id: ObjectID(r.insertedId)}, (err, textRecord) => {
+						db.collection('messages').findOne({_id: ObjectID(r.insertedId)}, (err, textRecord) => {
 							if(err) {
-								console.log(`> Unable to retrieve inserted record: ${err}`);
+								console.log(`> !! Unable to retrieve inserted record: ${err}`);
 								return res.status(500).json({error: err, status: `Unable to retrieve inserted record`});
 							}
 							
-							res.status(201).json(textRecord);
-						});
-					
-					});
-					
-//					res.status(resFromBurner.statusCode).send(chunky);
+							res.status(201).json(mapMsg(textRecord));
+						});					
+					});					
 				});
 				
 			});
@@ -402,17 +398,15 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-			db.collection('inbox').insertOne(req.incoming, (err, r) => {
+			db.collection('messages').insertOne(req.incoming, (err, r) => {
 				if (err) 
 					return res.status(500).json(err);
 			
 				var ip = req.connection.remoteAddress;
 				var len = req.get('Content-Length');
 				
-				console.log(` > Incoming message via [${ip}]: ${len} bytes.`);
+				console.log(`> Incoming message via [${ip}]: ${len} bytes.`);
 				
-//				sendmail(req.incoming.sender, req.incoming.data);
-	
 				return res.status(201).json(r);
 			});
 		});
@@ -586,11 +580,12 @@ function formatIncomingMessageJSON(req, res, next) {
 
 		default:
 			var err = new Error(`Invalid message type [${jsonTxt.type}]`);
-			console.log('Error receiving text:');
-			console.log(`   >${util.inspect(err)}`);
+			console.log('> !! Error receiving text:');
+			console.log(`   ${util.inspect(err)}`);
 			return res.status(400).json(err);
 	}
 }
+
 
 function formatOutgoingMessageJSON(req, res, next) {
 	if(!req.body)
@@ -598,23 +593,25 @@ function formatOutgoingMessageJSON(req, res, next) {
 	
 	var msg = req.body;
 	
-	if(!(msg.toNumber || msg.text))
+	if(!(msg.contact || msg.message))
 		return res.status(415).json({error: "Invalid JSON request data"});
 	
 	var outgoingMsg = {
 		intent: 'message',
 		data:	{
-			toNumber:	msg.toNumber,
-			text:		msg.text
+			toNumber:	msg.contact,
+			text:		msg.message
 		}
 	};
 	
 	req.outgoing = JSON.stringify(outgoingMsg);
-	req.body.timestamp = Date.now();
-	req.body.type = 'outboundText';
-	req.body.data = msg.text;
-	delete req.body.text;
-	
+	req.msgDocument = {
+		contact		: msg.contact,
+		data		: msg.message,
+		type		: 'outboundText',
+		timestamp	: Date.now(),
+		sentFlag	: false,
+	}
 	next();
 }
 
@@ -645,22 +642,9 @@ function getFormattedDateTime(tstamp) {
 	return moment(tstamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
 }
 
-function createError(code, message) {
-	switch(arguments.length) {
-		case 0:
-			code = 500;
-			message = "Unknown error";
-			break;
-		case 1:
-			code = 500;
-			message = code;
-			break;		
-	}
-	return {errorCode: code, errorMessage: mmessage};
-}
 
 
-
+if(false) {
 //
 //		function fireNewMsgEmail(_sender, _msg) {
 //			sparky.transmissions.send({
@@ -691,3 +675,4 @@ function createError(code, message) {
 //				return `0x${randomPrefix}${senderSuffix}`;
 //			}
 //		}
+}
