@@ -86,7 +86,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		app.get('/inbox/from', (req, res) => {
 			console.log('/inbox/from');
-			db.collection('inbox').find({type: {$ne: "outboundText"}}).sort({timestamp: -1}).toArray(function(err, items) {
+			db.collection('messages').find({type: {$ne: "outboundText"}}).sort({timestamp: -1}).toArray(function(err, items) {
 				if(err)
 					return res.status(500).json(err);
 					
@@ -111,7 +111,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		//	Get all messages from :number
 		app.get('/inbox/from/:number',  (req, res) => {
 			console.log('/inbox/from/:number');
-			db.collection('inbox')
+			db.collection('messages')
 				.find({sender: req.params.number})
 				.map(mapMsg)
 				.sort({timestamp: -1})
@@ -129,7 +129,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			var theirNumber = req.params.number;
 			
 			//	first get msgs from [everybody] to me:
-			db.collection('inbox')
+			db.collection('messages')
 				.find({})
 				.map((m) => {
 					m.contact = m.sender;
@@ -139,84 +139,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 //					if(err)
 //						return res.status(404).json(err);
 					
-					//	now get msgs from me to [everybody]
-					db.collection('sent')
-						.find({})
-						.map(function(m) {
-							m.contact = m.toNumber;
-							return m;
-						})
-						.toArray((err, fromMe) => {
-							if(err)
-								return res.status(404).json(err);
-							
-							//	then put them all together in one array and sort it by timestamp
-							var contactList = _.map(_.uniqBy(_.sortBy(_.concat(fromSender, fromMe), 'timestamp'), 'contact'), (m) => {return m.contact});
-//							var contactsWithTimestamps = _.map(allMessages, function(msg) {return {contact: msg.contact, timestamp: msg.timestamp}});
-//							var justContactNumbers = _.map(allMessages, function(msg) {return msg.contact});
-//							console.log(_.join(justTimeStamps, '\n'));
-//							console.log('Total entries: '+ justContactNumbers.length);
-							
-//							justContactNumbers = _.uniq(justContactNumbers);
-//							console.log('Unique:        '+ justContactNumbers.length)
-//							console.log(_.join(justContactNumbers, '\n'));
-							
-//							checkTimestamps(contactsWithTimestamps);
-							
-							//	filter down to list of unique phone numbers
-//							var contactList = _.uniqBy(contactsWithTimestamps, 'contact');		//[];
-//							for(var i=0; i<contactsWithTimestamps.length; i++) {
-//								var ts = contactsWithTimestamps[i].timestamp,
-//									cn = contactsWithTimestamps[i].contact,
-//									next_ts;
-//								
-//								if(i<contactsWithTimestamps.length-1) {
-//									next_ts = contactsWithTimestamps[i+1].timestamp;
-//									if(next_ts < ts)
-//										console.log(`ERROR: timestamps not sorted correctly at index [${i}] !`);
-//								}								
-//								
-//								if(!_.includes(contactList, contactsWithTimestamps[i].contact))
-//									contactList.push(contactsWithTimestamps[i].contact);
-//							}
-
-							var fnList = contactList.map((n) => {return lookupContactName.bind(undefined, n)});		
-							async.series(fnList, (err, results) => {
-								if(err)
-									return res.status(500).json(err);
-								
-								return res.json(results)
-							});
-							
-//							async.map(contactList, function(contact, callback) {
-//								db.collection('contacts').findOne({number: contact}, (err, contactEntry) => {
-//									if(contactEntry)
-//										return callback(null, {number: contact, name: contactEntry.name});
-//									
-//									return callback(null, {number: contact});
-//								});
-//							}, function(err, results) {						
-//								return res.status(200).json(_.reverse(results));
-//							});
-							
-							function lookupContactName(_number, callback) {
-								db.collection('contacts').findOne({number: _number}, (err, c) => {
-//									if(c)
-										return callback(null, {number: _number, name: c?c.name:_number});
-									
-//									return callback(null, {number: _number});
-								});
-							}
-							
-//							function checkTimestamps(_list) {
-//								for(var i=1;i<_list.length;i++)
-//									if(_list[i].timestamp < _list[i-1].timestamp)
-//										console.log(`Error: [${_list[i].timestamp}] < [${_list[i-1].timestamp}] !!\nIndex: [${i}]`);
-//							}
-						}
-					);
-				}
-			);
+			});
 		});
 				
 		app.get('/conversation/:number', (req, res) => {
@@ -224,38 +147,18 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			var theirNumber = req.params.number;
 			
 			//	first get msgs from them to me:
-			db.collection('inbox')
-				.find({sender: theirNumber})
+			db.collection('messages')
+				.find({contact: theirNumber})
 				.map(mapMsg)
 				.toArray((err, fromSender) => {
-					if(err)
-						return res.status(404).json(err);
-					
-					console.log(` > From: ${fromSender.length}`);
-					
-					//	now get msgs from me to them
-					db.collection('sent')
-						.find({toNumber: theirNumber})
-						.map(mapMsg)
-						.toArray((err, fromMe) => {
-							if(err)
-								return res.status(404).json(err);
-							
-							console.log(` > To:   ${fromMe.length}`);
-							
-							var allMessages = _.sortBy(_.concat(fromSender, fromMe), 'timestamp');
-//							_.reverse(allMessages);
-							res.json(allMessages);
-						}
-					);
-				}
-			);
+					//	TODO: finish
+			});
 		});
 		
 		app.get('/all', (req, res) => {
 			console.log('/all');
 			
-			db.collection('inbox').find({}).toArray((err1, inbox) => {				
+			db.collection('messages').find({}).toArray((err1, inbox) => {				
 				db.collection('sent').find({}).toArray((err2, sent) => {
 					if(err1 || err2)
 						return res.status(500).json({inboxError: err1, sentError: err2});
@@ -288,7 +191,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Get specific message by :msgID
 		app.get('/inbox/msg/:msgID',  (req, res) => {
-			db.collection('inbox')
+			db.collection('messages')
 				.findOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, msg) => {
 					if(err)
@@ -304,7 +207,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Delete message :msgID
 		app.delete('/inbox/msg/:msgID', (req, res) => {
-			db.collection('inbox')
+			db.collection('messages')
 				.deleteOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, r) => {
 					if(err) return res.status(500).json(err);
@@ -318,7 +221,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Set message :msgID status to 'read'
 		app.put('/inbox/msg/:msgID',  (req, res) => {
-			db.collection('inbox')
+			db.collection('messages')
 				.updateOne(
 					{_id	: new mongodb.ObjectID(req.params.msgID)},	//	filter object
 					{$set	: { readFlag: true }},
