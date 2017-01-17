@@ -72,7 +72,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		app.get('/inbox',  (req, res) => {
 			console.log('/inbox');
 			db.collection('messages')
-				.find({type: ""})
+				.find({type: {$ne: "outboundText"} })
 				.map(mapMsg)
 				.sort({timestamp: -1})
 				.toArray((err, items) => {
@@ -86,19 +86,19 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		app.get('/inbox/from', (req, res) => {
 			console.log('/inbox/from');
-			db.collection('inbox').find({}).sort({timestamp: -1}).toArray(function(err, items) {
+			db.collection('inbox').find({type: {$ne: "outboundText"}}).sort({timestamp: -1}).toArray(function(err, items) {
 				if(err)
 					return res.status(500).json(err);
 					
 				var senderList = [];
 				for(var i=0; i<items.length; i++)
-					if(!_.includes(senderList, items[i].sender))
-						senderList.push(items[i].sender);
+					if(!_.includes(senderList, items[i].contact))
+						senderList.push(items[i].contact);
 				
 				async.map(senderList, function(sender, callback) {
-					db.collection('contacts').findOne({number: sender}, (err, contact) => {
-						if(contact)
-							return callback(null, {number: sender, name: contact.fullName});
+					db.collection('contacts').findOne({number: sender}, (err, contactEntry) => {
+						if(contactEntry)
+							return callback(null, {number: sender, name: contactEntry.fullName});
 						
 						return callback(null, {number: sender, name: sender});
 					});
@@ -368,7 +368,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 					for (i=0; i<headerFields.length; i++)
 						res.set(headerFields[i], resFromBurner.headers[headerFields[i]]);
 					
-					db.collection('messages').insertOne(req.body, (err, r) => {
+					db.collection('messages').insertOne(req.msgDocument, (err, r) => {
 						if(err) {
 							console.log(`> !! Error inserting outgoing record: ${err}`);
 							return res.status(500).json({error: err});
@@ -561,7 +561,7 @@ function formatIncomingMessageJSON(req, res, next) {
 	var timestamp = Date.now();
 	
 	var returnBlob = {
-		sender		: jsonTxt.fromNumber.replace(/\D/g,''),
+		contact		: jsonTxt.fromNumber.replace(/\D/g,''),
 		type		: jsonTxt.type,
 		data		: jsonTxt.payload,
 		timestamp	: timestamp,
@@ -596,15 +596,14 @@ function formatOutgoingMessageJSON(req, res, next) {
 	if(!(msg.contact || msg.message))
 		return res.status(415).json({error: "Invalid JSON request data"});
 	
-	var outgoingMsg = {
+	req.outgoing = JSON.stringify({
 		intent: 'message',
 		data:	{
 			toNumber:	msg.contact,
 			text:		msg.message
 		}
-	};
+	});
 	
-	req.outgoing = JSON.stringify(outgoingMsg);
 	req.msgDocument = {
 		contact		: msg.contact,
 		data		: msg.message,
