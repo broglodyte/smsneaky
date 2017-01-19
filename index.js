@@ -4,6 +4,7 @@ const routeContacts = true;
 
 require('dotenv').config();
 
+const http = require('http');
 const https = require('https');
 const chalk = require('chalk');
 const async = require('async');
@@ -26,13 +27,21 @@ var db;
 var app = express();
 app.set('json spaces', 2);
 app.disable('etag');
+
+var server = require('http').createServer(app);
+var io = require('socket.io')(server);
+
+io.on('connection', (socket) => {
+	console.log(`> Client connected`);
 	
-function main(err, db) {
-	if (err) {
-		console.log(err);
-		process.exit(1);
-	}
-}
+	socket.on('refresh', function(contact) {
+		
+		
+	});
+	
+});
+server.listen(3001);
+
 
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	if (err) {
@@ -135,8 +144,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 					if(err)
 						return res.status(404).json(err);
 					
-					console.log(messageList);
-					
 					var contactList = _.uniq(_.map(messageList, 'contact'));
 					console.log(contactList);
 					
@@ -161,48 +168,28 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			
 			db.collection('messages')
 				.find({contact: theirNumber})
-				.sort({timestamp: -1})
+				.sort({timestamp: 1})
 				.map(mapMsg)
 				.toArray((err, messageList) => {
 					if(err)
 						return res.status(404).json(err);
 					
-					console.log(messageList);
-					res.json(_.reverse(messageList));
+					res.json(messageList);
 			});
 		});
 		
 		app.get('/all', (req, res) => {
 			console.log('/all');
 			
-			db.collection('messages').find({}).toArray((err1, inbox) => {				
-				db.collection('sent').find({}).toArray((err2, sent) => {
-					if(err1 || err2)
-						return res.status(500).json({inboxError: err1, sentError: err2});
+			db.collection('messages').find({}).toArray((err1, allMessages) => {
 					
-					var allMessages = _.concat(inbox, sent);
-					var allMessagesSortedByTimestamp = _.sortBy(allMessages, 'timestamp');
-					var allMessagesSortedAndNormalized = allMessagesSortedByTimestamp.map((m) => {
-						m.dateTime = getShortDateTime(m.timestamp);
-						
-						if(m.contact)
-							return m;
-					});
-					var allMessagesSortedAndNormalizedAndFiltered = allMessagesSortedAndNormalized.filter(m=>!!m);
-					var invalidMessages = allMessagesSortedAndNormalized.length - allMessagesSortedAndNormalizedAndFiltered.length;
-					if(invalidMessages)
-						console.log(`Invalid messages: [${invalidMessages}]`);
-					
-					res.json(allMessagesSortedAndNormalizedAndFiltered);
-					
-				});
-				
+				res.json(allMessages);
 			});
 			
 		});
 
 		//	Get specific message by :msgID
-		app.get('/inbox/msg/:msgID',  (req, res) => {
+		app.get('/msg/:msgID',  (req, res) => {
 			db.collection('messages')
 				.findOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, msg) => {
@@ -218,7 +205,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Delete message :msgID
-		app.delete('/inbox/msg/:msgID', (req, res) => {
+		app.delete('/msg/:msgID', (req, res) => {
 			db.collection('messages')
 				.deleteOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, r) => {
@@ -232,11 +219,11 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Set message :msgID status to 'read'
-		app.put('/inbox/msg/:msgID',  (req, res) => {
+		app.put('/msg/:msgID',  (req, res) => {
 			db.collection('messages')
 				.updateOne(
 					{_id	: new mongodb.ObjectID(req.params.msgID)},	//	filter object
-					{$set	: { readFlag: true }},
+					{$set	: { readFlag: true, newFlag: false }},
 					{upsert	: false},
 					(err, result) => {
 						if(err)

@@ -70,7 +70,7 @@ function loadConversation(msgArray) {
 	for(var i=0;i<msgArray.length;i++)
 		appendMessageToConversation(msgArray[i])
 	
-//	scrollToEnd();
+	scrollToEnd();
 }
 
 function appendMessageToConversation(msgObj) {
@@ -120,10 +120,8 @@ function appendMessageToConversation(msgObj) {
 		p.append(time, br, data);
 		newDiv.append(p).hide();
 		$(convDivPanel).append(newDiv);
-		newDiv.fadeIn({queue: true});
+		newDiv.fadeIn({queue: false});
 	}
-	
-	scrollToEnd();
 }
 
 function scrollToEnd() {
@@ -147,8 +145,8 @@ function sendMessage() {
 	
 	$.post("/outgoing", JSON.stringify(msgBlob))
 	.done(function(data) {
-		console.log('Message sent');
 		appendMessageToConversation(data);
+		scrollToEnd();
 		$(messageInput).val('');		
 	}).fail(function(err) {
 		console.log('Error:   ' + err);
