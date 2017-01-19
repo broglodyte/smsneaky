@@ -447,12 +447,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 	
 	// Initialize the app.
-	server = app.listen(port, '0.0.0.0', function () {
-		var address = server.address();
-		
-		var port = server.address().port;
-		console.log(`> App listening on port [${port}]`);
-	});
+//	server = app.listen(port, '0.0.0.0', function () {
+//		var address = server.address();
+//		
+//		var port = server.address().port;
+//		console.log(`> App listening on port [${port}]`);
+//	});
 });
 
 
