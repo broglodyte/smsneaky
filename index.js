@@ -30,7 +30,7 @@ app.disable('etag');
 
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
-var port = process.env.PORT || 3000;
+var port = process.env.PORT || 8080;
 
 server.listen(port, function() {
 	//	?
@@ -447,7 +447,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 	
 	// Initialize the app.
-	server = app.listen(process.env.PORT || 3000, '0.0.0.0', function () {
+	server = app.listen(port, '0.0.0.0', function () {
 		var address = server.address();
 		
 		var port = server.address().port;
