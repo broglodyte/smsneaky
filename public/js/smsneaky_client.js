@@ -26,7 +26,10 @@ $(document).ready(function() {
 		ev.preventDefault();
 		$(this).removeClass('x onX').val('').change();
 	});
-
+	
+	var socket = io();
+	socket.on('incoming', appendMessageToConversation);
+	
 	//setInterval(populateConversationList, 15000);
 });
 

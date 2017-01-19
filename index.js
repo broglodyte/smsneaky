@@ -30,18 +30,17 @@ app.disable('etag');
 
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
+var port = process.env.PORT || 3000;
+
+server.listen(port, function() {
+	//	?
+});
 
 io.on('connection', (socket) => {
 	console.log(`> Client connected`);
 	
-	socket.on('refresh', function(contact) {
 		
-		
-	});
-	
 });
-server.listen(3001);
-
 
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	if (err) {
@@ -145,7 +144,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 						return res.status(404).json(err);
 					
 					var contactList = _.uniq(_.map(messageList, 'contact'));
-					console.log(contactList);
 					
 					async.series(contactList.map(n => lookupContactName.bind(undefined, n)), (err, results) => {
 						if(err)
@@ -300,6 +298,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
+			
 			db.collection('messages').insertOne(req.incoming, (err, r) => {
 				if (err) 
 					return res.status(500).json(err);
@@ -308,6 +307,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				var len = req.get('Content-Length');
 				
 				console.log(`> Incoming message via [${ip}]: ${len} bytes.`);
+				
+				io.emit('incoming', req.incoming);
 				
 				return res.status(201).json(r);
 			});
@@ -446,7 +447,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 	
 	// Initialize the app.
-	var server = app.listen(process.env.PORT || 8080, '0.0.0.0', function () {
+	server = app.listen(process.env.PORT || 3000, '0.0.0.0', function () {
 		var address = server.address();
 		
 		var port = server.address().port;
