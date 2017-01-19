@@ -9,7 +9,7 @@ $(document).ready(function() {
 	populateConversationList();
 	$(contactInput).on({
 		input:		selectConversation,
-//		select:		selectConversation,
+		select:		selectConversation,
 		change:		selectConversation,
 		keydown:	handleContactKeyDown
 	});
@@ -149,8 +149,7 @@ function sendMessage() {
 	.done(function(data) {
 		console.log('Message sent');
 		appendMessageToConversation(data);
-		$(messageInput).val('');
-		
+		$(messageInput).val('');		
 	}).fail(function(err) {
 		console.log('Error:   ' + err);
 		alert('Error sending message: ' + err);
@@ -163,7 +162,7 @@ function populateConversationList() {
 //		convSelect.children('option:not(:first)').remove();
 		var contactDataList = $("datalist#contacts");
 		contactDataList.empty();
-		var dropdownOptionsList = convList.map(function(item) {
+		convList.map(function(item) {
 			var newOptionElement = $('<option>').text(item.name || '?').attr({value: item.number});
 //			newOptionElement.text = item.name;
 //			newOptionElement.value = item.number;

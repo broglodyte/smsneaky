@@ -126,19 +126,32 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				
 		app.get('/conversation', (req, res) => {
 			console.log('/conversation');
-			var theirNumber = req.params.number;
 			
-			//	first get msgs from [everybody] to me:
 			db.collection('messages')
 				.find({})
-				.map((m) => {
-					m.contact = m.sender;
-					return m;
-				})
-				.toArray((err, fromSender) => {
-//					if(err)
-//						return res.status(404).json(err);
+				.sort({timestamp: -1})
+//				.distinct('contact')
+				.toArray((err, messageList) => {
+					if(err)
+						return res.status(404).json(err);
 					
+					console.log(messageList);
+					
+					var contactList = _.uniq(_.map(messageList, 'contact'));
+					console.log(contactList);
+					
+					async.series(contactList.map(n => lookupContactName.bind(undefined, n)), (err, results) => {
+						if(err)
+							return res.status(500).json(err);
+						
+						return res.json(results);
+					});
+					
+					function lookupContactName(_number, callback) {
+						db.collection('contacts').findOne({number: _number}, (err, c) => {
+							return callback(null, {number: _number, name: c?c.name:_number});
+						});
+					}
 			});
 		});
 				
@@ -146,12 +159,16 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			console.log('/conversation/:number');
 			var theirNumber = req.params.number;
 			
-			//	first get msgs from them to me:
 			db.collection('messages')
 				.find({contact: theirNumber})
+				.sort({timestamp: -1})
 				.map(mapMsg)
-				.toArray((err, fromSender) => {
-					//	TODO: finish
+				.toArray((err, messageList) => {
+					if(err)
+						return res.status(404).json(err);
+					
+					console.log(messageList);
+					res.json(_.reverse(messageList));
 			});
 		});
 		
@@ -168,15 +185,10 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 					var allMessagesSortedAndNormalized = allMessagesSortedByTimestamp.map((m) => {
 						m.dateTime = getShortDateTime(m.timestamp);
 						
-						if(m.toNumber) 
-							m.contact = m.toNumber;
-						if(m.sender)
-							m.contact = m.sender;
-						
 						if(m.contact)
 							return m;
 					});
-					var allMessagesSortedAndNormalizedAndFiltered = allMessagesSortedAndNormalized.filter(m => !!m);
+					var allMessagesSortedAndNormalizedAndFiltered = allMessagesSortedAndNormalized.filter(m=>!!m);
 					var invalidMessages = allMessagesSortedAndNormalized.length - allMessagesSortedAndNormalizedAndFiltered.length;
 					if(invalidMessages)
 						console.log(`Invalid messages: [${invalidMessages}]`);
@@ -323,8 +335,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				m.msgUrl = `/inbox/msg/${m._id}`;
 				m.fromUrl = `/inbox/from/${m.sender}`;
 			}
-			if(m.text)
-				m.data = m.text;
+//			if(m.text)
+//				m.data = m.text;
 			
 			m.dateTime = getFormattedDateTime(m.timestamp);
 			
