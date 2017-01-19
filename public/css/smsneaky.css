@@ -7,7 +7,7 @@
     /* transition:         all 3s cubic-bezier(1, 0, 0, 1); */
 }
 .clearable{
-  background: #fff url(http://i.stack.imgur.com/mJotv.gif) no-repeat right -10px center;
+  background: #fff url(https://i.stack.imgur.com/mJotv.gif) no-repeat right -10px center;
   border: 1px solid #999;
   padding: 3px 18px 3px 4px;     /* Use the same right padding (18) in jQ! */
   border-radius: 3px;

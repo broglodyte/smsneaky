@@ -133,7 +133,7 @@ function scrollToEnd() {
 
 function sendMessage() {
 	var msg = $(messageInput).val();
-	var rec = $(contactInput).val();	
+	var rec = $(contactInput).val();
 	
 	if(!msg)
 		return;
@@ -150,7 +150,7 @@ function sendMessage() {
 	.done(function(data) {
 		appendMessageToConversation(data);
 		scrollToEnd();
-		$(messageInput).val('');		
+		$(messageInput).val('');
 	}).fail(function(err) {
 		console.log('Error:   ' + err);
 		alert('Error sending message: ' + err);

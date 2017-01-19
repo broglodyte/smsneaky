@@ -308,7 +308,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				
 				console.log(`> Incoming message via [${ip}]: ${len} bytes.`);
 				
-				io.emit('incoming', req.incoming);
+				io.emit('incoming', mapMsg(req.incoming));
 				
 				return res.status(201).json(r);
 			});
