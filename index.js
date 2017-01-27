@@ -4,6 +4,7 @@ const routeContacts = true;
 
 require('dotenv').config();
 
+const http = require('http');
 const https = require('https');
 const chalk = require('chalk');
 const async = require('async');
@@ -19,19 +20,27 @@ const jsonParser = require('body-parser').json();
 
 const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
+const ObjectID = mongodb.ObjectID;
 
 var db;
 
 var app = express();
 app.set('json spaces', 2);
 app.disable('etag');
+
+var server = require('http').createServer(app);
+var io = require('socket.io')(server);
+var port = process.env.PORT || 8080;
+
+server.listen(port, function() {
+	//	?
+});
+
+io.on('connection', (socket) => {
+	console.log(`> Client connected`);
 	
-function main(err, db) {
-	if (err) {
-		console.log(err);
-		process.exit(1);
-	}
-}
+		
+});
 
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	if (err) {
@@ -70,8 +79,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		//	Get all messages
 		app.get('/inbox',  (req, res) => {
 			console.log('/inbox');
-			db.collection('inbox')
-				.find({})
+			db.collection('messages')
+				.find({type: {$ne: "outboundText"} })
 				.map(mapMsg)
 				.sort({timestamp: -1})
 				.toArray((err, items) => {
@@ -85,19 +94,19 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		app.get('/inbox/from', (req, res) => {
 			console.log('/inbox/from');
-			db.collection('inbox').find({}).sort({timestamp: -1}).toArray(function(err, items) {
+			db.collection('messages').find({type: {$ne: "outboundText"}}).sort({timestamp: -1}).toArray(function(err, items) {
 				if(err)
 					return res.status(500).json(err);
 					
 				var senderList = [];
 				for(var i=0; i<items.length; i++)
-					if(!_.includes(senderList, items[i].sender))
-						senderList.push(items[i].sender);
+					if(!_.includes(senderList, items[i].contact))
+						senderList.push(items[i].contact);
 				
 				async.map(senderList, function(sender, callback) {
-					db.collection('contacts').findOne({number: sender}, (err, contact) => {
-						if(contact)
-							return callback(null, {number: sender, name: contact.fullName});
+					db.collection('contacts').findOne({number: sender}, (err, contactEntry) => {
+						if(contactEntry)
+							return callback(null, {number: sender, name: contactEntry.fullName});
 						
 						return callback(null, {number: sender, name: sender});
 					});
@@ -110,7 +119,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		//	Get all messages from :number
 		app.get('/inbox/from/:number',  (req, res) => {
 			console.log('/inbox/from/:number');
-			db.collection('inbox')
+			db.collection('messages')
 				.find({sender: req.params.number})
 				.map(mapMsg)
 				.sort({timestamp: -1})
@@ -125,169 +134,61 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				
 		app.get('/conversation', (req, res) => {
 			console.log('/conversation');
-			var theirNumber = req.params.number;
 			
-			//	first get msgs from [everybody] to me:
-			db.collection('inbox')
+			db.collection('messages')
 				.find({})
-				.map((m) => {
-					m.contact = m.sender;
-					return m;
-				})
-				.toArray((err, fromSender) => {
-//					if(err)
-//						return res.status(404).json(err);
+				.sort({timestamp: -1})
+//				.distinct('contact')
+				.toArray((err, messageList) => {
+					if(err)
+						return res.status(404).json(err);
 					
-					//	now get msgs from me to [everybody]
-					db.collection('sent')
-						.find({})
-						.map(function(m) {
-							m.contact = m.toNumber;
-							return m;
-						})
-						.toArray((err, fromMe) => {
-							if(err)
-								return res.status(404).json(err);
-							
-							//	then put them all together in one array and sort it by timestamp
-							var contactList = _.map(_.uniqBy(_.sortBy(_.concat(fromSender, fromMe), 'timestamp'), 'contact'), (m) => {return m.contact});
-//							var contactsWithTimestamps = _.map(allMessages, function(msg) {return {contact: msg.contact, timestamp: msg.timestamp}});
-//							var justContactNumbers = _.map(allMessages, function(msg) {return msg.contact});
-//							console.log(_.join(justTimeStamps, '\n'));
-//							console.log('Total entries: '+ justContactNumbers.length);
-							
-//							justContactNumbers = _.uniq(justContactNumbers);
-//							console.log('Unique:        '+ justContactNumbers.length)
-//							console.log(_.join(justContactNumbers, '\n'));
-							
-//							checkTimestamps(contactsWithTimestamps);
-							
-							//	filter down to list of unique phone numbers
-//							var contactList = _.uniqBy(contactsWithTimestamps, 'contact');		//[];
-//							for(var i=0; i<contactsWithTimestamps.length; i++) {
-//								var ts = contactsWithTimestamps[i].timestamp,
-//									cn = contactsWithTimestamps[i].contact,
-//									next_ts;
-//								
-//								if(i<contactsWithTimestamps.length-1) {
-//									next_ts = contactsWithTimestamps[i+1].timestamp;
-//									if(next_ts < ts)
-//										console.log(`ERROR: timestamps not sorted correctly at index [${i}] !`);
-//								}								
-//								
-//								if(!_.includes(contactList, contactsWithTimestamps[i].contact))
-//									contactList.push(contactsWithTimestamps[i].contact);
-//							}
-
-							var fnList = contactList.map((n) => {return lookupContactName.bind(undefined, n)});		
-							async.series(fnList, (err, results) => {
-								if(err)
-									return res.status(500).json(err);
-								
-								return res.json(results)
-							});
-							
-//							async.map(contactList, function(contact, callback) {
-//								db.collection('contacts').findOne({number: contact}, (err, contactEntry) => {
-//									if(contactEntry)
-//										return callback(null, {number: contact, name: contactEntry.name});
-//									
-//									return callback(null, {number: contact});
-//								});
-//							}, function(err, results) {						
-//								return res.status(200).json(_.reverse(results));
-//							});
-							
-							function lookupContactName(_number, callback) {
-								db.collection('contacts').findOne({number: _number}, (err, c) => {
-//									if(c)
-										return callback(null, {number: _number, name: c?c.name:_number});
-									
-//									return callback(null, {number: _number});
-								});
-							}
-							
-//							function checkTimestamps(_list) {
-//								for(var i=1;i<_list.length;i++)
-//									if(_list[i].timestamp < _list[i-1].timestamp)
-//										console.log(`Error: [${_list[i].timestamp}] < [${_list[i-1].timestamp}] !!\nIndex: [${i}]`);
-//							}
-						}
-					);
-				}
-			);
+					var contactList = _.uniq(_.map(messageList, 'contact'));
+					
+					async.series(contactList.map(n => lookupContactName.bind(undefined, n)), (err, results) => {
+						if(err)
+							return res.status(500).json(err);
+						
+						return res.json(results);
+					});
+					
+					function lookupContactName(_number, callback) {
+						db.collection('contacts').findOne({number: _number}, (err, c) => {
+							return callback(null, {number: _number, name: c?c.name:_number});
+						});
+					}
+			});
 		});
 				
 		app.get('/conversation/:number', (req, res) => {
 			console.log('/conversation/:number');
 			var theirNumber = req.params.number;
 			
-			//	first get msgs from them to me:
-			db.collection('inbox')
-				.find({sender: theirNumber})
+			db.collection('messages')
+				.find({contact: theirNumber})
+				.sort({timestamp: 1})
 				.map(mapMsg)
-				.toArray((err, fromSender) => {
+				.toArray((err, messageList) => {
 					if(err)
 						return res.status(404).json(err);
 					
-					console.log(` > From: ${fromSender.length}`);
-					
-					//	now get msgs from me to them
-					db.collection('sent')
-						.find({toNumber: theirNumber})
-						.map(mapMsg)
-						.toArray((err, fromMe) => {
-							if(err)
-								return res.status(404).json(err);
-							
-							console.log(` > To:   ${fromMe.length}`);
-							
-							var allMessages = _.sortBy(_.concat(fromSender, fromMe), 'timestamp');
-//							_.reverse(allMessages);
-							res.json(allMessages);
-						}
-					);
-				}
-			);
+					res.json(messageList);
+			});
 		});
 		
 		app.get('/all', (req, res) => {
 			console.log('/all');
 			
-			db.collection('inbox').find({}).toArray((err1, inbox) => {				
-				db.collection('sent').find({}).toArray((err2, sent) => {
-					if(err1 || err2)
-						return res.status(500).json({inboxError: err1, sentError: err2});
+			db.collection('messages').find({}).toArray((err1, allMessages) => {
 					
-					var allMessages = _.concat(inbox, sent);
-					var allMessagesSortedByTimestamp = _.sortBy(allMessages, 'timestamp');
-					var allMessagesSortedAndNormalized = allMessagesSortedByTimestamp.map((m) => {
-						m.dateTime = getShortDateTime(m.timestamp);
-						
-						if(m.toNumber) 
-							m.contact = m.toNumber;
-						if(m.sender)
-							m.contact = m.sender;
-						
-						if(m.contact)
-							return m;
-					});
-					var allMessagesSortedAndNormalizedAndFiltered = allMessagesSortedAndNormalized.filter(m => !!m);
-					var invalidMessages = allMessagesSortedAndNormalized.length - allMessagesSortedAndNormalizedAndFiltered.length;
-					if(invalidMessages)
-						console.log(`Invalid messages: [${invalidMessages}]`);
-					
-					res.json(allMessagesSortedAndNormalizedAndFiltered);
-					
-				});
-				
+				res.json(allMessages);
 			});
 			
 		});
 
 		//	Get specific message by :msgID
-		app.get('/inbox/msg/:msgID',  (req, res) => {
-			db.collection('inbox')
+		app.get('/msg/:msgID',  (req, res) => {
+			db.collection('messages')
 				.findOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, msg) => {
 					if(err)
@@ -302,8 +203,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Delete message :msgID
-		app.delete('/inbox/msg/:msgID', (req, res) => {
-			db.collection('inbox')
+		app.delete('/msg/:msgID', (req, res) => {
+			db.collection('messages')
 				.deleteOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, r) => {
 					if(err) return res.status(500).json(err);
@@ -316,12 +217,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 
 		//	Set message :msgID status to 'read'
-		app.put('/inbox/msg/:msgID',  (req, res) => {
-			db.collection('inbox')
+		app.put('/msg/:msgID',  (req, res) => {
+			db.collection('messages')
 				.updateOne(
 					{_id	: new mongodb.ObjectID(req.params.msgID)},	//	filter object
-					{$set	: { readFlag: true }},
-					{upsert: false},
+					{$set	: { readFlag: true, newFlag: false }},
+					{upsert	: false},
 					(err, result) => {
 						if(err)
 							return res.status(500).json(err);
@@ -333,86 +234,102 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		
 
 		app.post('/outgoing', [jsonParser, formatOutgoingMessageJSON], (req, res) => {
-			var host = process.env.BURNER_HOST;
-			var burnerID = process.env.BURNER_ID;
-			var token = process.env.BURNER_TOKEN
-			var urlPath = `/webhooks/burner/${burnerID}?token=${token}`;
-			var fullURL = `https://${server}${urlPath}`;
 			
-			var reqOptions = {
-				host: host,
-				path: urlPath,
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Content-Length': +req.outgoing.length
+			//	first thing (after building text-message data objects in 'formatOutgoingMessageJSON') is
+			//	insert the text record into the database, with sentFlag set to false by default. 
+			db.collection('messages').insertOne(req.msgDocument, (err, r) => {
+				if(err) {
+					console.log(`> !! Error inserting outgoing record: ${err}`);
+					return res.status(500).json({error: err});
 				}
-			};
-			
-			var postReq = https.request(reqOptions, (resFromBurner) => {
-				console.log(` > Outgoing message: ${resFromBurner.statusCode}`);
-				resFromBurner.setEncoding('utf8');
-				var chunky = '';
 				
-				resFromBurner.on('data', (chunk) => {
-					chunky += chunk; 
-				});
+				//	set up url + data + config parameters for POST to burner webhook:
+				var host = process.env.BURNER_HOST;
+				var burnerID = process.env.BURNER_ID;
+				var token = process.env.BURNER_TOKEN
+				var urlPath = `/webhooks/burner/${burnerID}?token=${token}`;
+				var fullURL = `https://${server}${urlPath}`;
 				
-				resFromBurner.on('end', () => {
-					var sendSuccess = JSON.parse(chunky).success;
-					var sendSuccessString = sendSuccess ? chalk.green('Success') : chalk.red('FAILURE');
-					console.log(`Send successful: ${sendSuccessString}`);
+				var reqOptions = {
+					host: host,
+					path: urlPath,
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Content-Length': +req.outgoing.length
+					}
+				};
+				
+				//	send outgoing text message by POSTing to webhook
+				var postReq = https.request(reqOptions, (resFromBurner) => {
+					console.log(`> POST outgoing message response: ${resFromBurner.statusCode}`);
+					resFromBurner.setEncoding('utf8');
+					var chunky = '';
 					
-					var headerFields = Object.keys(resFromBurner.headers);
-					for (i=0; i<headerFields.length; i++)
-						res.set(headerFields[i], resFromBurner.headers[headerFields[i]]);
-					
-					db.collection('sent').insertOne(req.body, (err, r) => {
-						if(err) {
-							console.log(`Error inserting outgoing record: ${err}`);
-							return res.status(500).json({error: err});
-						}
-						
-						console.log('> Outgoing text logged to database');
-						
-						// lookup the newly inserted sent text record and send to client for insertion into UX:
-						db.collection('sent').findOne({_id: ObjectID(r.insertedId)}, (err, textRecord) => {
-							if(err) {
-								console.log(`> Unable to retrieve inserted record: ${err}`);
-								return res.status(500).json({error: err, status: `Unable to retrieve inserted record`});
-							}
-							
-							res.status(201).json(textRecord);
-						});
-					
+					//	gather return data into one string
+					resFromBurner.on('data', (chunk) => {
+						chunky += chunk; 
 					});
 					
-//					res.status(resFromBurner.statusCode).send(chunky);
+					//	then do something with the return data
+					resFromBurner.on('end', () => {
+						var burnerResponse = JSON.parse(chunky);
+						var sendSuccess = burnerResponse.success;
+						var sendSuccessString = sendSuccess ? chalk.green('Success') : chalk.red('FAILURE');
+						console.log(`> Send message result: ${sendSuccessString}`);
+						
+						//	message send confirmed, update record to show that:
+						if(sendSuccess) {
+							db.collection('messages').findOneAndUpdate(
+							{	_id: 				ObjectID(r.insertedId) },	// filter/find by message unique ObjectID:
+							{	$set: { sentFlag:	true } },					// new data to update
+							{	returnOriginal:		false },					// options (return updated result, not original)
+							(err, updateResult) => {							// do something afterwards:
+								if(err) {
+									console.log(`> ** Error setting record 'sentFlag' to true: ${err}`);
+									return res.status(418).json({error: err, status: 'Message was sent successfully but system was unable to update the [sentFlag] for the text record object'});
+								}
+								
+								//	send HTTP response headers straight through to client
+								var headerFields = Object.keys(resFromBurner.headers);
+								for (i=0; i<headerFields.length; i++)
+									res.set(headerFields[i], resFromBurner.headers[headerFields[i]]);
+								
+								console.log(`> Send complete, no errors`);
+								res.status(201).json(mapMsg(updateResult.value));								
+							});
+						}
+						else {
+							console.log(`> !! Burner webhook returned error: ${burnerResponse}`);
+							return res.status(502).json({error: burnerResponse, status: 'Burner error response'});
+						}
+					});
+				});
+				postReq.on('error', (e) => {
+				  console.log(`> !! Error on POST request: ${e.message}`);
 				});
 				
+				//	send that sweet, beautiful text message
+				postReq.write(req.outgoing);
+				postReq.end();
 			});
-			postReq.on('error', (e) => {
-			  console.log(`> !! Problem with request: ${e.message}`);
-			});
-			
-			postReq.write(req.outgoing);
-			postReq.end();
 		});
 		
 
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
-			db.collection('inbox').insertOne(req.incoming, (err, r) => {
+			
+			db.collection('messages').insertOne(req.incoming, (err, r) => {
 				if (err) 
 					return res.status(500).json(err);
 			
 				var ip = req.connection.remoteAddress;
 				var len = req.get('Content-Length');
 				
-				console.log(` > Incoming message via [${ip}]: ${len} bytes.`);
+				console.log(`> Incoming message via [${ip}]: ${len} bytes.`);
 				
-//				sendmail(req.incoming.sender, req.incoming.data);
-	
+				io.emit('incoming', mapMsg(req.incoming));
+				
 				return res.status(201).json(r);
 			});
 		});
@@ -420,14 +337,14 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		function mapMsg(m) {
 			if(m.type === 'outboundText') {
 				m.msgUrl = `/sent/msg/${m._id}`;
-				m.toUrl = `/sent/to/${m.toNumber}`;
+				m.toUrl = `/sent/to/${m.contact}`;
 			}
 			else {
 				m.msgUrl = `/inbox/msg/${m._id}`;
-				m.fromUrl = `/inbox/from/${m.sender}`;
+				m.fromUrl = `/inbox/from/${m.contact}`;
 			}
-			if(m.text)
-				m.data = m.text;
+//			if(m.text)
+//				m.data = m.text;
 			
 			m.dateTime = getFormattedDateTime(m.timestamp);
 			
@@ -550,12 +467,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 	
 	// Initialize the app.
-	var server = app.listen(process.env.PORT || 8080, '0.0.0.0', function () {
-		var address = server.address();
-		
-		var port = server.address().port;
-		console.log(`> App listening on port [${port}]`);
-	});
+//	server = app.listen(port, '0.0.0.0', function () {
+//		var address = server.address();
+//		
+//		var port = server.address().port;
+//		console.log(`> App listening on port [${port}]`);
+//	});
 });
 
 
@@ -567,7 +484,7 @@ function formatIncomingMessageJSON(req, res, next) {
 	var timestamp = Date.now();
 	
 	var returnBlob = {
-		sender		: jsonTxt.fromNumber.replace(/\D/g,''),
+		contact		: jsonTxt.fromNumber.replace(/\D/g,''),
 		type		: jsonTxt.type,
 		data		: jsonTxt.payload,
 		timestamp	: timestamp,
@@ -586,11 +503,12 @@ function formatIncomingMessageJSON(req, res, next) {
 
 		default:
 			var err = new Error(`Invalid message type [${jsonTxt.type}]`);
-			console.log('Error receiving text:');
-			console.log(`   >${util.inspect(err)}`);
+			console.log('> !! Error receiving text:');
+			console.log(`   ${util.inspect(err)}`);
 			return res.status(400).json(err);
 	}
 }
+
 
 function formatOutgoingMessageJSON(req, res, next) {
 	if(!req.body)
@@ -598,23 +516,24 @@ function formatOutgoingMessageJSON(req, res, next) {
 	
 	var msg = req.body;
 	
-	if(!(msg.toNumber || msg.text))
+	if(!(msg.contact || msg.message))
 		return res.status(415).json({error: "Invalid JSON request data"});
 	
-	var outgoingMsg = {
+	req.outgoing = JSON.stringify({
 		intent: 'message',
 		data:	{
-			toNumber:	msg.toNumber,
-			text:		msg.text
+			toNumber:	msg.contact,
+			text:		msg.message
 		}
-	};
+	});
 	
-	req.outgoing = JSON.stringify(outgoingMsg);
-	req.body.timestamp = Date.now();
-	req.body.type = 'outboundText';
-	req.body.data = msg.text;
-	delete req.body.text;
-	
+	req.msgDocument = {
+		contact		: msg.contact,
+		data		: msg.message,
+		type		: 'outboundText',
+		timestamp	: Date.now(),
+		sentFlag	: false,
+	}
 	next();
 }
 
@@ -645,22 +564,9 @@ function getFormattedDateTime(tstamp) {
 	return moment(tstamp).tz("America/Winnipeg").format("ddd, MMM Do YYYY - hh:mm:ss A");
 }
 
-function createError(code, message) {
-	switch(arguments.length) {
-		case 0:
-			code = 500;
-			message = "Unknown error";
-			break;
-		case 1:
-			code = 500;
-			message = code;
-			break;		
-	}
-	return {errorCode: code, errorMessage: mmessage};
-}
 
 
-
+if(false) {
 //
 //		function fireNewMsgEmail(_sender, _msg) {
 //			sparky.transmissions.send({
@@ -691,3 +597,4 @@ function createError(code, message) {
 //				return `0x${randomPrefix}${senderSuffix}`;
 //			}
 //		}
+}

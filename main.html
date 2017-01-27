@@ -7,12 +7,13 @@
 		<script src="https://cdn.jsdelivr.net/async/2.0.0/async.js"></script>
 		<script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA=" crossorigin="anonymous"></script>
 		<script src="/js/smsneaky_client.js"></script>
+		<script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
 	</head>
 	<body>
 		<div id="mainDiv">
-			<input list="contacts" name="contact" id="contact">
+			<input class="clearable" list="contacts" id="contact" name="" value="" placeholder="" >
 			<datalist id="contacts">
-				<option value="Select or enter new contact">Test</option>
+				<option value="">Select or enter new contact</option>
 			</datalist>
 			
 			<div id="convDiv"></div>
