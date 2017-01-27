@@ -8,9 +8,9 @@ $(document).ready(function() {
 	$.ajaxSetup({contentType: "application/json; charset=utf-8"});
 	populateConversationList();
 	$(contactInput).on({
-		input:		selectConversation,
-		select:		selectConversation,
-		change:		selectConversation,
+		input:		contactInput_onInput,
+		select:		contactInput_onSelect,
+		change:		contactInput_onChange,
 		keydown:	handleContactKeyDown
 	});
 	$(messageInput).keydown(handleMessageKeyDown);
@@ -28,10 +28,40 @@ $(document).ready(function() {
 	});
 	
 	var socket = io();
-	socket.on('incoming', appendMessageToConversation);
+	socket.on('incoming', routeIncomingText);
 	
 	//setInterval(populateConversationList, 15000);
 });
+
+function contactInput_onInput(e) {
+	console.log('contactInput:[input] handler...');
+	console.log('Event data: ');
+	console.log(e);
+	
+	selectConversation();
+}
+
+function contactInput_onSelect(e) {
+	console.log('contactInput:[select] handler...');
+	console.log('Event data: ');
+	console.log(e);
+	
+	selectConversation();
+}
+
+function contactInput_onChange(e) {
+	console.log('contactInput:[change] handler...');
+	console.log('Event data: ');
+	console.log(e);
+	
+	selectConversation();
+}
+
+
+function routeIncomingText(txtData) {
+	
+	
+}
 
 function handleContactKeyDown(e) {
 	if(e.keyCode == 27) {
@@ -71,7 +101,7 @@ function loadConversation(msgArray) {
 	$(convDivPanel).empty();
 	
 	for(var i=0;i<msgArray.length;i++)
-		appendMessageToConversation(msgArray[i])
+		appendMessageToConversation(msgArray[i]);
 	
 	scrollToEnd();
 }

@@ -56,7 +56,7 @@ p.fromMe:hover {
     box-shadow: 7px 7px 12px rgba(0, 0, 128, 0.6);
     background-color: rgba(221, 221, 255, 0.7);
     border: 1px solid black;
-    transform: translateX(-3px);
+    transform: translateX(-3px) translateY(-1px);
 }
 
 p.toMe {
@@ -82,7 +82,7 @@ p.toMe:hover {
     box-shadow: -7px 7px 12px rgba(0, 128, 0, 0.6);
     background-color: rgba(221, 255, 221, 0.7);
     border: 1px solid black;
-    transform: translateX(3px);
+    transform: translateX(3px) translateY(-1px);
 }
 
 input {

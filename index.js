@@ -234,65 +234,85 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		
 
 		app.post('/outgoing', [jsonParser, formatOutgoingMessageJSON], (req, res) => {
-			var host = process.env.BURNER_HOST;
-			var burnerID = process.env.BURNER_ID;
-			var token = process.env.BURNER_TOKEN
-			var urlPath = `/webhooks/burner/${burnerID}?token=${token}`;
-			var fullURL = `https://${server}${urlPath}`;
 			
-			var reqOptions = {
-				host: host,
-				path: urlPath,
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Content-Length': +req.outgoing.length
+			//	first thing (after building text-message data objects in 'formatOutgoingMessageJSON') is
+			//	insert the text record into the database, with sentFlag set to false by default. 
+			db.collection('messages').insertOne(req.msgDocument, (err, r) => {
+				if(err) {
+					console.log(`> !! Error inserting outgoing record: ${err}`);
+					return res.status(500).json({error: err});
 				}
-			};
-			
-			var postReq = https.request(reqOptions, (resFromBurner) => {
-				console.log(`> Outgoing message: ${resFromBurner.statusCode}`);
-				resFromBurner.setEncoding('utf8');
-				var chunky = '';
 				
-				resFromBurner.on('data', (chunk) => {
-					chunky += chunk; 
-				});
+				//	set up url + data + config parameters for POST to burner webhook:
+				var host = process.env.BURNER_HOST;
+				var burnerID = process.env.BURNER_ID;
+				var token = process.env.BURNER_TOKEN
+				var urlPath = `/webhooks/burner/${burnerID}?token=${token}`;
+				var fullURL = `https://${server}${urlPath}`;
 				
-				resFromBurner.on('end', () => {
-					var sendSuccess = JSON.parse(chunky).success;
-					var sendSuccessString = sendSuccess ? chalk.green('Success') : chalk.red('FAILURE');
-					console.log(`> Send successful: ${sendSuccessString}`);
+				var reqOptions = {
+					host: host,
+					path: urlPath,
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Content-Length': +req.outgoing.length
+					}
+				};
+				
+				//	send outgoing text message by POSTing to webhook
+				var postReq = https.request(reqOptions, (resFromBurner) => {
+					console.log(`> POST outgoing message response: ${resFromBurner.statusCode}`);
+					resFromBurner.setEncoding('utf8');
+					var chunky = '';
 					
-					var headerFields = Object.keys(resFromBurner.headers);
-					for (i=0; i<headerFields.length; i++)
-						res.set(headerFields[i], resFromBurner.headers[headerFields[i]]);
+					//	gather return data into one string
+					resFromBurner.on('data', (chunk) => {
+						chunky += chunk; 
+					});
 					
-					db.collection('messages').insertOne(req.msgDocument, (err, r) => {
-						if(err) {
-							console.log(`> !! Error inserting outgoing record: ${err}`);
-							return res.status(500).json({error: err});
-						}
+					//	then do something with the return data
+					resFromBurner.on('end', () => {
+						var burnerResponse = JSON.parse(chunky);
+						var sendSuccess = burnerResponse.success;
+						var sendSuccessString = sendSuccess ? chalk.green('Success') : chalk.red('FAILURE');
+						console.log(`> Send message result: ${sendSuccessString}`);
 						
-						// lookup the newly inserted sent text record and send to client for insertion into UX:
-						db.collection('messages').findOne({_id: ObjectID(r.insertedId)}, (err, textRecord) => {
-							if(err) {
-								console.log(`> !! Unable to retrieve inserted record: ${err}`);
-								return res.status(500).json({error: err, status: `Unable to retrieve inserted record`});
-							}
-							
-							res.status(201).json(mapMsg(textRecord));
-						});					
-					});					
+						//	message send confirmed, update record to show that:
+						if(sendSuccess) {
+							db.collection('messages').findOneAndUpdate(
+							{	_id: 				ObjectID(r.insertedId) },	// filter/find by message unique ObjectID:
+							{	$set: { sentFlag:	true } },					// new data to update
+							{	returnOriginal:		false },					// options (return updated result, not original)
+							(err, updateResult) => {							// do something afterwards:
+								if(err) {
+									console.log(`> ** Error setting record 'sentFlag' to true: ${err}`);
+									return res.status(418).json({error: err, status: 'Message was sent successfully but system was unable to update the [sentFlag] for the text record object'});
+								}
+								
+								//	send HTTP response headers straight through to client
+								var headerFields = Object.keys(resFromBurner.headers);
+								for (i=0; i<headerFields.length; i++)
+									res.set(headerFields[i], resFromBurner.headers[headerFields[i]]);
+								
+								console.log(`> Send complete, no errors`);
+								res.status(201).json(mapMsg(updateResult.value));								
+							});
+						}
+						else {
+							console.log(`> !! Burner webhook returned error: ${burnerResponse}`);
+							return res.status(502).json({error: burnerResponse, status: 'Burner error response'});
+						}
+					});
+				});
+				postReq.on('error', (e) => {
+				  console.log(`> !! Error on POST request: ${e.message}`);
 				});
 				
+				//	send that sweet, beautiful text message
+				postReq.write(req.outgoing);
+				postReq.end();
 			});
-			postReq.on('error', (e) => {
-			  console.log(`> !! Problem with request: ${e.message}`);
-			});
-			
-			postReq.write(req.outgoing);
-			postReq.end();
 		});
 		
 
@@ -317,11 +337,11 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		function mapMsg(m) {
 			if(m.type === 'outboundText') {
 				m.msgUrl = `/sent/msg/${m._id}`;
-				m.toUrl = `/sent/to/${m.toNumber}`;
+				m.toUrl = `/sent/to/${m.contact}`;
 			}
 			else {
 				m.msgUrl = `/inbox/msg/${m._id}`;
-				m.fromUrl = `/inbox/from/${m.sender}`;
+				m.fromUrl = `/inbox/from/${m.contact}`;
 			}
 //			if(m.text)
 //				m.data = m.text;
