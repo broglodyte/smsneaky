@@ -3,6 +3,7 @@
 var convDivPanel = "div#convDiv";
 var contactInput = "input#contact";
 var messageInput = "input#textEntry";
+var optionsLink  = "a#optionsLink";
 
 $(document).ready(function() {
 	$.ajaxSetup({contentType: "application/json; charset=utf-8"});
@@ -27,6 +28,8 @@ $(document).ready(function() {
 		$(this).removeClass('x onX').val('').change();
 	});
 	
+	$(optionsLink).click(openOptionsDialog);
+	
 	var socket = io();
 	socket.on('incoming', routeIncomingText);
 	
@@ -35,24 +38,21 @@ $(document).ready(function() {
 
 function contactInput_onInput(e) {
 	console.log('contactInput:[input] handler...');
-	console.log('Event data: ');
-	console.log(e);
+	console.log('Event data: ' + e );
 	
 	selectConversation();
 }
 
 function contactInput_onSelect(e) {
 	console.log('contactInput:[select] handler...');
-	console.log('Event data: ');
-	console.log(e);
+	console.log('Event data: ' + e );
 	
 	selectConversation();
 }
 
 function contactInput_onChange(e) {
 	console.log('contactInput:[change] handler...');
-	console.log('Event data: ');
-	console.log(e);
+	console.log('Event data: ' + e );	
 	
 	selectConversation();
 }
