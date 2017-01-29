@@ -33,8 +33,12 @@ $(document).ready(function() {
 	var socket = io();
 	socket.on('incoming', routeIncomingText);
 	
-	//setInterval(populateConversationList, 15000);
+	
 });
+
+function openOptionsDialog() {
+	
+}
 
 function contactInput_onInput(e) {
 	console.log('contactInput:[input] handler...');
@@ -74,6 +78,8 @@ function handleContactKeyDown(e) {
 }
 
 function handleMessageKeyDown(e) {
+	if(e.which == 9)
+		$(contactInput).focus();
 	if(e.which == 13)
 		sendMessage();
 	if(e.which == 27)
@@ -130,12 +136,18 @@ function appendMessageToConversation(msgObj) {
 			break;
 			
 		case 'inboundMedia':
-			data = $('<img>')
-				.addClass('mmsImg')
+			var img_Blurred = $('<img>')
+				.addClass('blurImage')
 				.attr({
 					src:	msgObj.data,
-					id:		'img_'+msgObj._id
+					id:		'img_'+msgObj._id+'_blurred'
 				});
+			var img_Clear = $('<img>')
+				.addClass('clearImage')
+				.attr({
+					src:	msgObj.data,
+					id:		'img_'+msgObj._id+'_clear'
+				})
 			break;
 			
 		case 'voiceMail':

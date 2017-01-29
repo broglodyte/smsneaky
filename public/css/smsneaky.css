@@ -104,13 +104,16 @@ input:focus {
     background-color: #ddffdd;
 }
 
-img.mmsImg {
+img {
     max-width: 100%;
     height: auto;
+	filter: blur(25px);
     transition: all 0.8 ease;
 }
 
-img.mmsImg:hover {
+img:hover {
+	filter: blur(0px);
+	transition: all 1 ease;
 }
 
 .timeLabel {

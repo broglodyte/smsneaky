@@ -32,14 +32,12 @@ var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var port = process.env.PORT || 8080;
 
-server.listen(port, function() {
+server.listen(port, '0.0.0.0' function() {
 	//	?
 });
 
 io.on('connection', (socket) => {
-	console.log(`> Client connected`);
-	
-		
+	console.log(`> Client connected`);		
 });
 
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
@@ -234,6 +232,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		
 
 		app.post('/outgoing', [jsonParser, formatOutgoingMessageJSON], (req, res) => {
+			console.log(`> Initiating send-message...`);
 			
 			//	first thing (after building text-message data objects in 'formatOutgoingMessageJSON') is
 			//	insert the text record into the database, with sentFlag set to false by default. 
@@ -315,9 +314,9 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			});
 		});
 		
-
 		//	Incoming text webhook (used by Burner)
 		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
+			console.log(`> Incoming text-message...`);
 			
 			db.collection('messages').insertOne(req.incoming, (err, r) => {
 				if (err) 
@@ -326,7 +325,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				var ip = req.connection.remoteAddress;
 				var len = req.get('Content-Length');
 				
-				console.log(`> Incoming message via [${ip}]: ${len} bytes.`);
+				console.log(`> POST web request via [${ip}]: ${len} bytes.`);
 				
 				io.emit('incoming', mapMsg(req.incoming));
 				
@@ -508,7 +507,6 @@ function formatIncomingMessageJSON(req, res, next) {
 			return res.status(400).json(err);
 	}
 }
-
 
 function formatOutgoingMessageJSON(req, res, next) {
 	if(!req.body)
