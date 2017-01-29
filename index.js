@@ -15,7 +15,6 @@ const path = require('path');
 const moment = require('moment-timezone');
 const express = require('express');
 const auth = require('./auth');
-const sendmail = require('./smtp');
 const jsonParser = require('body-parser').json();
 
 const mongodb = require('mongodb');
