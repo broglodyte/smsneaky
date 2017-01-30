@@ -140,29 +140,20 @@ function appendMessageToConversation(msgObj) {
 				.addClass('blurImage')
 				.attr({
 					src:	msgObj.data,
-					id:		/*'img_'+msgObj._id+*/'_blurred'
+					id:		'img_'+msgObj._id+'_blurred'
 				});
 			var img_Clear = $('<img>')
 				.addClass('clearImage')
 				.attr({
 					src:	msgObj.data,
-					id:		/*'img_'+msgObj._id+*/'_clear'
+					id:		'img_'+msgObj._id+'_clear'
 				})
-			data = $("<div></div>")
-				.addClass('imgMessageDiv')
-				.attr({
-					id:		'imgdiv_' + msgObj._id
-				})
-				.append(img_Clear, img_Blurred);
 			break;
 			
 		case 'voiceMail':
 			data = $('<audio controls></audio>').addClass('mmsAudio');
 			data.attr({src: msgObj.data});
-			data.html($("<a></a>")
-				.attr({href: msgObj.data})
-				.text('Download <span class="glyphicon glyphicon-volume-up"></span>')
-				);
+			data.html($("<a></a>").attr({href: msgObj.data}).text('Download <span class="glyphicon glyphicon-volume-up"></span>'));
 			break;
 		default:
 			console.log('Unknown message type: "'+msgObj.type+'"');
