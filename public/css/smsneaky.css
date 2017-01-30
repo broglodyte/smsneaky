@@ -23,7 +23,7 @@ div#convDiv {
     min-height: 100px;
     max-height: 500px;
     border: 1px solid gray;
-  border-radius: 3px;
+	border-radius: 3px;
     overflow-y: auto;
     padding-bottom: 7px;
     -webkit-transition: all 3s cubic-bezier(1, 0, 0, 1);
@@ -104,19 +104,34 @@ input:focus {
     background-color: #ddffdd;
 }
 
-img {
-    max-width: 100%;
+img.viewClear {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
     height: auto;
-	filter: blur(25px);
-    transition: all 0.8 ease;
+	z-index: -1;
 }
 
-img:hover {
-	filter: blur(0px);
-	transition: all 1 ease;
+img.viewBlur {
+	position: absolute;
+	left: 0;
+	top: 0;
+    width: 100%;
+    height: auto;
+	z-index: 1;
+	filter: blur(25px);
+	transform: scale(1.3);
+    /* transition: all 0.8 ease; */
 }
+
+/* img:hover { */
+	/* filter: blur(0px); */
+	/* transition: all 1 ease; */
+/* } */
 
 .timeLabel {
     font-style: italic;
     font-size: 0.7em;
+	color: #90949c;
 }
