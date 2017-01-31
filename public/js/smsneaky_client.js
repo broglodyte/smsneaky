@@ -149,7 +149,69 @@ function appendMessageToConversation(msgObj) {
 					id:		'img_'+msgObj._id+'_clear'
 				})
 			break;
-			
+			 /*
+			<!DOCTYPE html>
+<html>
+<head>
+<style>
+div.innerMmsDiv {
+	overflow: hidden;
+    width: 100%;
+    height: auto;
+     
+}
+
+img {
+	border: solid 1px black;
+    margin: 10px;
+}
+img#clearView {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    z-index: -1;
+}
+img#blurView {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    z-index: 1;
+    filter: blur(10px) /*brightness(33%) grayscale(100%)*/;
+    transform: scale(1.3);
+}
+</style>
+<script>
+function moveBlurry() {
+	
+}
+</script>
+</head>
+<body>
+
+<div class="outerMmsDiv" id="mmsCont_12345">
+	<div class="innerMmsDiv" id="mmsDiv_12345">
+        <img src="w3css.gif" width="100" height="140" id="clearView">
+        <img src="w3css.gif" width="100" height="140" id="blurView">
+    </div>
+</div>
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+<button onclick="moveBlurry()" style="top: 150px;">Move it</button>
+
+
+</body>
+</html>
+
+			*/
 		case 'voiceMail':
 			data = $('<audio controls></audio>').addClass('mmsAudio');
 			data.attr({src: msgObj.data});
