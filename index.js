@@ -32,11 +32,11 @@ var io = require('socket.io')(server);
 var port = process.env.PORT || 8080;
 
 server.listen(port, '0.0.0.0', function() {
-	//	?
+	console.log(`> Server listening on port [$port]`);
 });
 
 io.on('connection', (socket) => {
-	console.log(`> Client connected`);		
+	console.log(`> Socket.io client connected`);
 });
 
 MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
@@ -47,7 +47,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 	// Save database object from the callback for reuse.
 	app.locals.db = db = database;
-	console.log("> Ready");
+	console.log("> MongoDB connection established");
 
 	app.use(/^\/(inbox|sent|conversation|contacts|main|outgoing).*$/, auth);
 	
