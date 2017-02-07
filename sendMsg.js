@@ -1,36 +1,53 @@
 // sendMessage.js
 
-var http = require("https");
+var https = require("https");
 
-var options = {
-	"method" : "POST",
-	"hostname" : "api.burnerapp.com",
-	"port" : null,
-	"path" : "/webhooks/burner/b06553cc-7630-4061-9d75-8e258a741822?token=A90C4C3E-D750-4D58-AFF4-EA68063475E8",
-	"headers" : {
-		"content-type" : "application/json",
-		"cache-control" : "no-cache"
-	}
-};
+module.exports = function(txtMessage, txtNumber, callback) {
 
-var req = http.request(options, function (res) {
+	//	TODO: make this configurable, maybe by having module.exports 
+	//	function take Burner ID/token info and return a function based on that...
+	var options = JSON.parse(
+					Buffer.from(
+						'eyJtZXRob2QiOiJQT1NUIiwiaG9zdG5hbWUiOiJhcGkuYnVybmVyYXBwLmNvbSIs' + 
+						'InBvcnQiOm51bGwsInBhdGgiOiIvd2ViaG9va3MvYnVybmVyL2IwNjU1M2NjLTc2' +
+						'MzAtNDA2MS05ZDc1LThlMjU4YTc0MTgyMj90b2tlbj1BOTBDNEMzRS1ENzUwLTRE' +
+						'NTgtQUZGNC1FQTY4MDYzNDc1RTgiLCJoZWFkZXJzIjp7ImNvbnRlbnQtdHlwZSI6' +
+						'ImFwcGxpY2F0aW9uL2pzb24iLCJjYWNoZS1jb250cm9sIjoibm8tY2FjaGUifX0=' ,
+						'base64'
+					)
+				);
+
+	var req = https.request(options, function (res) {
+		var statusCode = res.statusCode;
+		var errorObj;
 		var chunks = [];
 
-		res.on("data", function (chunk) {
-			chunks.push(chunk);
-		});
+		res.on("data", chunks.push);
 
-		res.on("end", function () {
-			var body = Buffer.concat(chunks);
-			console.log(body.toString());
+		res.on("end", () => {
+			try {
+				var response = JSON.parse(Buffer.concat(chunks));
+				if(!response.success)	//	if response indicates failure
+					return callback(response);	//	return response as error
+				
+				return callback(null, response);	//	otherwise return response as success indicator
+			}
+			catch (ex) {
+				return callback(ex);
+			}
 		});
+	}).on("error", (err) => {
+		debug(`Error occurred in sendMsg.js: ${err.message}. POST to Burner outgoing text webhook failed`);
+		return callback(err);
 	});
 
-req.write(JSON.stringify({
+	req.write(JSON.stringify({
 		intent : 'message',
 		data : {
-			toNumber : '+19182827760',
-			text : 'Have you talked to Syd lately? any news on her situation? (this is brian, use this # from now on instead of the -7103 one)'
+			toNumber	: txtNumber,
+			text		: txtMessage
 		}
 	}));
-req.end();
+	
+	req.end();
+}

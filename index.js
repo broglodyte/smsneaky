@@ -91,24 +91,27 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 
 		app.get('/inbox/from', (req, res) => {
 			console.log('/inbox/from');
-			db.collection('messages').find({type: {$ne: "outboundText"}}).sort({timestamp: -1}).toArray(function(err, items) {
-				if(err)
-					return res.status(500).json(err);
-					
-				var senderList = [];
-				for(var i=0; i<items.length; i++)
-					if(!_.includes(senderList, items[i].contact))
-						senderList.push(items[i].contact);
-				
-				async.map(senderList, function(sender, callback) {
-					db.collection('contacts').findOne({number: sender}, (err, contactEntry) => {
-						if(contactEntry)
-							return callback(null, {number: sender, name: contactEntry.fullName});
+			db.collection('messages')
+				.find({type: {$ne: "outboundText"}})
+				.sort({timestamp: -1})
+				.toArray(function(err, items) {
+					if(err)
+						return res.status(500).json(err);
 						
-						return callback(null, {number: sender, name: sender});
-					});
-				}, function(err, results) {						
-					return res.status(200).json(results);
+					var senderList = [];
+					for(var i=0; i<items.length; i++)
+						if(!_.includes(senderList, items[i].contact))
+							senderList.push(items[i].contact);
+					
+					async.map(senderList, function(sender, callback) {
+						db.collection('contacts').findOne({number: sender}, (err, contactEntry) => {
+							if(contactEntry)
+								return callback(null, {number: sender, name: contactEntry.fullName});
+							
+							return callback(null, {number: sender, name: sender});
+						});
+					}, function(err, results) {						
+						return res.status(200).json(results);
 				});
 			});
 		});

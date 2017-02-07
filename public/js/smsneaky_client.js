@@ -1,17 +1,18 @@
 //	smsneaky_client.js
 //
-var convDivPanel = "div#convDiv";
-var contactInput = "input#contact";
-var messageInput = "input#textEntry";
+var convDiv = "div#convDiv";
+var contactInput = "input#contactInput";
+var messageInput = "textarea#messageInput";
 var optionsLink  = "a#optionsLink";
 
 $(document).ready(function() {
 	$.ajaxSetup({contentType: "application/json; charset=utf-8"});
 	populateConversationList();
+	
 	$(contactInput).on({
-		input:		contactInput_onInput,
-		select:		contactInput_onSelect,
-		change:		contactInput_onChange,
+		input:		selectConversation,
+		// select:		selectConversation,
+		// change:		selectConversation,
 		keydown:	handleContactKeyDown
 	});
 	$(messageInput).keydown(handleMessageKeyDown);
@@ -28,37 +29,16 @@ $(document).ready(function() {
 		$(this).removeClass('x onX').val('').change();
 	});
 	
+	
+	
 	$(optionsLink).click(openOptionsDialog);
 	
 	var socket = io();
 	socket.on('incoming', routeIncomingText);
-	
-	
 });
 
 function openOptionsDialog() {
 	
-}
-
-function contactInput_onInput(e) {
-	console.log('contactInput:[input] handler...');
-	console.log('Event data: ' + e );
-	
-	selectConversation();
-}
-
-function contactInput_onSelect(e) {
-	console.log('contactInput:[select] handler...');
-	console.log('Event data: ' + e );
-	
-	selectConversation();
-}
-
-function contactInput_onChange(e) {
-	console.log('contactInput:[change] handler...');
-	console.log('Event data: ' + e );	
-	
-	selectConversation();
 }
 
 
@@ -67,27 +47,43 @@ function routeIncomingText(txtData) {
 	
 }
 
-function handleContactKeyDown(e) {
-	if(e.keyCode == 27) {
-		$(contactInput).val('');
-		$(convDivPanel).empty();
-	}
-	if(e.keyCode == 13) {
-		selectConversation();
+//	do stuff when key is pressed at [contact] input
+function handleContactKeyPress(e) {
+	switch(e.keyCode) {
+		case 27:
+			$(contactInput).val('');
+			$(convDiv).empty();
+			break;
+			
+		case 9:
+		case 13:
+			selectConversation();
+			break;
 	}
 }
 
-function handleMessageKeyDown(e) {
-	if(e.which == 9)
-		$(contactInput).focus();
-	if(e.which == 13)
-		sendMessage();
-	if(e.which == 27)
-		$(messageInput).val('');
+//	do stuff when key is pressed from [message]
+function handleMessageKeyPress(e) {
+	switch(e.which) {
+		case 9:
+			$(contactInput).focus();
+			break;
+			
+		//	user pressed 'enter' key, check for alt/ctrl modifier
+		case 13:
+			if(e.altKey)
+			sendMessage();
+			break;
+		
+		//	user pressed 'esc' key, clear out message entry text
+		case 27:
+			$(messageInput).val('');
+			break;
+	}
 }
 
 function selectConversation() {
-	$(convDivPanel).empty();
+	$(convDiv).empty();
 	
 	var selectedConversation = $(contactInput).val();
 	if(!selectedConversation || !selectedConversation.length)
@@ -103,8 +99,13 @@ function selectConversation() {
 	});
 }
 
+function clearConversation() {
+	var convMesssages = $(convDiv).children();
+	$('div[id=convDiv] > p')
+}
+
 function loadConversation(msgArray) {
-	$(convDivPanel).empty();
+	clearConversation();
 	
 	for(var i=0;i<msgArray.length;i++)
 		appendMessageToConversation(msgArray[i]);
@@ -149,69 +150,7 @@ function appendMessageToConversation(msgObj) {
 					id:		'img_'+msgObj._id+'_clear'
 				})
 			break;
-			 /*
-			<!DOCTYPE html>
-<html>
-<head>
-<style>
-div.innerMmsDiv {
-	overflow: hidden;
-    width: 100%;
-    height: auto;
-     
-}
-
-img {
-	border: solid 1px black;
-    margin: 10px;
-}
-img#clearView {
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    z-index: -1;
-}
-img#blurView {
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    z-index: 1;
-    filter: blur(10px) /*brightness(33%) grayscale(100%)*/;
-    transform: scale(1.3);
-}
-</style>
-<script>
-function moveBlurry() {
-	
-}
-</script>
-</head>
-<body>
-
-<div class="outerMmsDiv" id="mmsCont_12345">
-	<div class="innerMmsDiv" id="mmsDiv_12345">
-        <img src="w3css.gif" width="100" height="140" id="clearView">
-        <img src="w3css.gif" width="100" height="140" id="blurView">
-    </div>
-</div>
-
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-
-<button onclick="moveBlurry()" style="top: 150px;">Move it</button>
-
-
-</body>
-</html>
-
-			*/
+			
 		case 'voiceMail':
 			data = $('<audio controls></audio>').addClass('mmsAudio');
 			data.attr({src: msgObj.data});
@@ -226,14 +165,17 @@ function moveBlurry() {
 	if(!invalid) {
 		p.append(time, br, data);
 		newDiv.append(p).hide();
-		$(convDivPanel).append(newDiv);
+		$(convDiv).append(newDiv);
 		newDiv.fadeIn({queue: false});
 	}
 }
 
 function scrollToEnd() {
-	$(convDivPanel).animate({ scrollTop: $(convDivPanel).prop("scrollHeight")}, 250);
+	$(convDiv).animate({ scrollTop: $(convDiv).prop("scrollHeight")}, 250);
 }
+
+
+function recvMessage()
 
 function sendMessage() {
 	var msg = $(messageInput).val();

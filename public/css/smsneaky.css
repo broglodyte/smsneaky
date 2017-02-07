@@ -1,8 +1,8 @@
 #mainDiv {
     font-size: 0.9em;
     width: 350px;
-    /* padding: 6px; */
-    /* border: 1px solid black; */
+    padding: 6px;
+    border: 1px solid black;
     /* -webkit-transition: all 3s cubic-bezier(1, 0, 0, 1); */
     /* transition:         all 3s cubic-bezier(1, 0, 0, 1); */
 }
@@ -23,11 +23,11 @@ div#convDiv {
     min-height: 100px;
     max-height: 500px;
     border: 1px solid gray;
-  border-radius: 3px;
+	border-radius: 3px;
     overflow-y: auto;
     padding-bottom: 7px;
-    -webkit-transition: all 3s cubic-bezier(1, 0, 0, 1);
-    transition: all 3s cubic-bezier(1, 0, 0, 1);
+    -webkit-transition: all 1s cubic-bezier(1, 0, 0, 1);
+    transition: all 1s cubic-bezier(1, 0, 0, 1);
 }
 
 div.msgRowDiv {
@@ -85,6 +85,17 @@ p.toMe:hover {
     transform: translateX(3px) translateY(-1px);
 }
 
+textarea.message {
+	background-color: #f8f8f8;
+	resize: vertical;
+	box-sizing: border-box;
+	border: 1px solid #adadad;
+	border-radius: 5px;
+}
+textarea.message:focus {
+	box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+}
+
 input {
     border: 1px solid #adadad;
     width: 100%;
@@ -119,4 +130,11 @@ img:hover {
 .timeLabel {
     font-style: italic;
     font-size: 0.7em;
+}
+
+meter#charMeter {
+	-webkit-transform: rotate(90deg);
+	-moz-transform: rotate(90deg);
+	-o-transform: rotate(90deg);
+	transform: rotate(90deg);
 }

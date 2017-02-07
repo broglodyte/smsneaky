@@ -18,7 +18,12 @@
 			
 			<div id="convDiv"></div>
 			
-			<input type="text" id="textEntry" name="textEntry">
+			<!-- single line text-message input; old & busted -->
+			<!-- <input type="text" id="textEntry" name="textEntry"> -->
+			
+			<!-- new hotness: multiline resizeable textarea box -->
+			<textarea name="messageInput" id="messageInput" maxlength="500" wrap="soft" placeholder="Say something..."></textarea>
+			<meter id="charMeter" min="0" optimum="399" low="400" high="490" max="500"></meter>
 			
 			<a href="#" id="optionsLink">Options...</a>
 		</div>
