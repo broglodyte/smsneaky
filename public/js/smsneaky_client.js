@@ -149,6 +149,9 @@ function appendMessageToConversation(msgObj) {
 					src:	msgObj.data,
 					id:		'img_'+msgObj._id+'_clear'
 				})
+				
+			data = $('<div></div>').addClass('imgContainer').append(img_Blurred);
+			
 			break;
 			
 		case 'voiceMail':
@@ -206,13 +209,10 @@ function sendMessage() {
 
 function populateConversationList() {
 	$.getJSON('/conversation', function(convList) {
-//		convSelect.children('option:not(:first)').remove();
 		var contactDataList = $("datalist#contacts");
 		contactDataList.empty();
 		convList.map(function(item) {
-			var newOptionElement = $('<option>').text(item.name || '?').attr({value: item.number});
-//			newOptionElement.text = item.name;
-//			newOptionElement.value = item.number;
+			var newOptionElement = $('<option></option>').text(item.name || '?').attr({value: item.number});
 			contactDataList.append(newOptionElement);
 		});
 	});

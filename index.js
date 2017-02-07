@@ -2,6 +2,7 @@
 const routeMessages = true;
 const routeContacts = true;
 
+process.chdir(__dirname);
 require('dotenv').config();
 
 const http = require('http');
@@ -32,7 +33,7 @@ var io = require('socket.io')(server);
 var port = process.env.PORT || 8080;
 
 server.listen(port, '0.0.0.0', function() {
-	console.log(`> Server listening on port [$port]`);
+	console.log(`> Server listening on port [${port}]`);
 });
 
 io.on('connection', (socket) => {
