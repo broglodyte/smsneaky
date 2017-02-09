@@ -1,7 +1,7 @@
 //	smsneaky_client.js
 //
 var convDiv = "div#convDiv";
-var contactInput = "input#contactInput";
+var contactInput = "input#contact";
 var messageInput = "textarea#messageInput";
 var optionsLink  = "a#optionsLink";
 
