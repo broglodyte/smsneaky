@@ -11,11 +11,11 @@ $(document).ready(function() {
 	
 	$(contactInput).on({
 		input:		selectConversation,
-		// select:		selectConversation,
-		// change:		selectConversation,
-		keydown:	handleContactKeyDown
+		select:		selectConversation,
+		change:		selectConversation,
+		keydown:	handleContactKeyPress
 	});
-	$(messageInput).keydown(handleMessageKeyDown);
+	$(messageInput).keydown(handleMessageKeyPress);
 		
 	function tog(v) {
 		return v ? 'addClass' : 'removeClass';
@@ -101,7 +101,7 @@ function selectConversation() {
 
 function clearConversation() {
 	var convMesssages = $(convDiv).children();
-	$('div[id=convDiv] > p')
+	$('div[id=convDiv] > p').empty();
 }
 
 function loadConversation(msgArray) {
@@ -178,7 +178,7 @@ function scrollToEnd() {
 }
 
 
-function recvMessage()
+function recvMessage() {}
 
 function sendMessage() {
 	var msg = $(messageInput).val();
@@ -223,3 +223,4 @@ function embiggenPicture(imgID) {
 	var docWidth = $("div#mainDiv").width();
 	var docHeight = $("div#mainDiv").height();
 }
+
