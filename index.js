@@ -208,12 +208,12 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			db.collection('messages')
 				.deleteOne({_id: new mongodb.ObjectID(req.params.msgID)},
 				(err, r) => {
-					if(err) return res.status(500).json(err);
+					if(err) return res.status(500).json({success: false, results: err});
 
 					if(r.deletedCount !== 1)
-						return res.status(404).json(new Error(`Message ID [${req.params.msgID}] not found`));
+						return res.status(404).json({success: false, results: new Error(`Message ID [${req.params.msgID}] not found`)});
 
-					return res.status(204).json(r);
+					return res.status(204).json({success: true, results: r});
 			});
 		});
 

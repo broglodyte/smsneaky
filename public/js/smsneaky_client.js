@@ -1,7 +1,7 @@
 //	smsneaky_client.js
 //
 var convDiv = "div#convDiv";
-var contactInput = "input#contactInput";
+var contactInput = "input#contact";
 var messageInput = "textarea#messageInput";
 var optionsLink  = "a#optionsLink";
 
@@ -125,8 +125,13 @@ function appendMessageToConversation(msgObj) {
 	var newDiv = $("<div>").addClass("msgRowDiv").attr({id: msgID});
 	var p = $("<p></p>").addClass(pClass);
 	
+	var header = $("<div></div>").addClass('msgHeader');
 	var time = $("<span></span>").addClass('timeLabel').text(msgObj.dateTime);
-	var br   = $("<br>");
+	var deleteButton = $("<a>X</a>").addClass('deleteX');
+	deleteButton.click(deleteMessage.bind(undefined, msgObj._id));
+	header.append(time, deleteButton);
+	
+	// var br   = $("<br>");
 	var data;
 	
 	var invalid = false;
@@ -138,7 +143,7 @@ function appendMessageToConversation(msgObj) {
 			
 		case 'inboundMedia':
 			var img_Blurred = $('<img>')
-				.addClass('blurImage')
+				//.addClass('blurImage')//
 				.attr({
 					src:	msgObj.data,
 					id:		'img_'+msgObj._id+'_blurred'
@@ -166,11 +171,30 @@ function appendMessageToConversation(msgObj) {
 	}
 	
 	if(!invalid) {
-		p.append(time, br, data);
+		p.append(header, data);
 		newDiv.append(p).hide();
 		$(convDiv).append(newDiv);
 		newDiv.fadeIn({queue: false});
 	}
+}
+
+function deleteMessage(_msgID) {
+	var delRequest = $.ajax({
+		method: 'DELETE',
+		url: '/msg/' + _msgID
+	}).done(function(response) {
+		if(response.success) {
+			$('msg_' + msgID).animate({left: "-100px"}, 1000).remove();
+		}
+		else {
+			notify("Error deleting message: " + response.results);
+		}
+		
+	});
+}
+
+function notify(msg) {
+	alert(msg);
 }
 
 function scrollToEnd() {
