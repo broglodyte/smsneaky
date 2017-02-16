@@ -142,7 +142,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 //				.distinct('contact')
 				.toArray((err, messageList) => {
 					if(err)
-						return res.status(404).json(err);
+						return res.status(405).json(err);
 					
 					var contactList = _.uniq(_.map(messageList, 'contact'));
 					

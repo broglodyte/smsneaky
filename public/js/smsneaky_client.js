@@ -140,7 +140,7 @@ function appendMessageToConversation(msgObj) {
 	deleteButton.click(deleteMessage.bind(undefined, msgObj._id));
 	header.append(time, deleteButton);
 	
-	// var br   = $("<br>");
+	var br   = $("<br>");
 	var data;
 	
 	var invalid = false;
@@ -180,7 +180,7 @@ function appendMessageToConversation(msgObj) {
 	}
 	
 	if(!invalid) {
-		p.append(header, data);
+		p.append(header, br, data);
 		newDiv.append(p).hide();
 		$(convDiv).append(newDiv);
 		newDiv.fadeIn({queue: false});
