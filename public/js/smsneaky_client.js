@@ -21,15 +21,20 @@ $(document).ready(function() {
 		return v ? 'addClass' : 'removeClass';
 	} 
 	$(document).on('input', '.clearable', function() {
-		$(this)[tog(this.value)]('x');
-	}).on('mousemove', '.x', function( e ){
-		$(this)[tog(this.offsetWidth-18 < e.clientX-this.getBoundingClientRect().left)]('onX');
-	}).on('touchstart click', '.onX', function( ev ){
+		$(this)[tog(this.value)]('clearX');
+	}).on('mousemove', '.clearX', function( e ){
+		$(this)[tog(this.offsetWidth-18 < e.clientX-this.getBoundingClientRect().left)]('onClearX');
+	}).on('touchstart click', '.onClearX', function( ev ){
 		ev.preventDefault();
-		$(this).removeClass('x onX').val('').change();
+		$(this).removeClass('clearX onClearX').val('').change();
+		
 	});
 	
+	$(document).on('click', '.deletable', function(e) {
+		
+	});
 	
+	textareaResize($(messageInput), $("#charMeter"));	
 	
 	$(optionsLink).click(openOptionsDialog);
 	
@@ -71,8 +76,10 @@ function handleMessageKeyPress(e) {
 			
 		//	user pressed 'enter' key, check for alt/ctrl modifier
 		case 13:
-			if(e.altKey)
-			sendMessage();
+			if(e.altKey) {
+				alert('sending message');
+				sendMessage();
+			}
 			break;
 		
 		//	user pressed 'esc' key, clear out message entry text
@@ -80,6 +87,8 @@ function handleMessageKeyPress(e) {
 			$(messageInput).val('');
 			break;
 	}
+	
+	$('meter#charMeter').val($(this).val().length);
 }
 
 function selectConversation() {
@@ -190,6 +199,8 @@ function deleteMessage(_msgID) {
 			notify("Error deleting message: " + response.results);
 		}
 		
+	}).fail(function(blah) { 
+		alert('FAIL');
 	});
 }
 
@@ -248,3 +259,36 @@ function embiggenPicture(imgID) {
 	var docHeight = $("div#mainDiv").height();
 }
 
+
+var textareaResize = function(source, dest) {
+    var resizeInt = null;
+    
+    // the handler function
+    var resizeEvent = function() {
+		var textBoxHeight = source.outerHeight();
+		
+		var right = -12 + (40 - dest.width());
+		var top = -26 + (40 - dest.width());
+		//dest.css({right: right, top: top});
+		
+		console.log(`Right: ${right}`);
+		console.log(`Top:   ${top}`);
+        //dest.outerHeight(source.outerHeight());
+    };
+
+    source.on("mousedown", function(e) {
+        resizeInt = setInterval(resizeEvent, 10);
+    });
+
+    // The mouseup event stops the interval,
+    // then call the resize event one last time.
+    // We listen for the whole window because in some cases,
+    // the mouse pointer may be on the outside of the textarea.
+    $(window).on("mouseup", function(e) {
+        if (resizeInt !== null) {
+            clearInterval(resizeInt);
+        }
+        resizeEvent();
+    });
+};
+    

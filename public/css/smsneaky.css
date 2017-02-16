@@ -3,6 +3,7 @@
     width: 350px;
     padding: 6px;
     border: 1px solid black;
+	float: right;
     /* -webkit-transition: all 3s cubic-bezier(1, 0, 0, 1); */
     /* transition:         all 3s cubic-bezier(1, 0, 0, 1); */
 }
@@ -13,9 +14,14 @@
   border-radius: 3px;
   transition: background 0.4s;
 }
-.clearable.x  { background-position: right 5px center; } /* (jQ) Show icon */
-.clearable.onX{ cursor: pointer; }              /* (jQ) hover cursor style */
+.clearable.clearX  { background-position: right 5px center; } /* (jQ) Show icon */
+.clearable.onClearX{ cursor: pointer; }              /* (jQ) hover cursor style */
 .clearable::-ms-clear {display: none; width:0; height:0;} /* Remove IE default X */
+
+.deletable {
+	
+	
+}
 
 div#convDiv {
     width: 100%;
@@ -94,7 +100,7 @@ p.toMe:hover {
     /* transform: translateX(1px) translateY(-1px); */
 }
 
-textarea.messageInput {
+textarea#messageInput {
 	background-color: #f8f8f8;
 	resize: vertical;
 	box-sizing: border-box;
@@ -102,8 +108,9 @@ textarea.messageInput {
 	border-radius: 5px;
 	width: 95%;
 	margin-right: 1px;
+	margin-top: 2px;
 }
-textarea.messageInput:focus {
+textarea#messageInput:focus {
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
 }
 
@@ -170,10 +177,10 @@ meter#charMeter {
 	-webkit-transform: rotate(90deg);
 	-moz-transform: rotate(90deg);
 	-o-transform: rotate(90deg);
-	transform: rotate(90deg);
+	transform: rotate(270deg);
 	right: -12px;
 	float: right;
 	position: relative;
-	width: 38px;
-	top: -25px;
+	width: 40px;
+	top: -26px;
 }
