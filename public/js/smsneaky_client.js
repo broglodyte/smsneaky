@@ -27,10 +27,22 @@ $(document).ready(function() {
 	}).on('touchstart click', '.onClearX', function( ev ){
 		ev.preventDefault();
 		$(this).removeClass('clearX onClearX').val('').change();
-		
+	});
+	$(document).keypress(function() {
+		$('meter#charMeter').val($(messageInput).val().length);
 	});
 	
-	$(document).on('click', '.deletable', function(e) {
+	$(document).on('mouseenter', '.deletable', function(e) {
+		
+		showX(this.id);
+	});
+	
+	$(document).on('mouseleave', '.deletable', function(e) {
+		
+		hideX(this.id);
+	});
+	
+	$(messageInput).on('change', function(ev) {		
 		
 	});
 	
@@ -39,16 +51,22 @@ $(document).ready(function() {
 	$(optionsLink).click(openOptionsDialog);
 	
 	var socket = io();
-	socket.on('incoming', routeIncomingText);
+	socket.on('incoming', recvMessage);
 });
 
-function openOptionsDialog() {
-	
+function showX(msgID) {
+	$('div#msg_'+msgID.toString()+' a.deleteX').animate(
+			{left: "-=15", opacity: 1.0},
+			{queue: false, duration: 600});
 }
 
+function hideX(msgID) {	
+	$('div#msg_'+msgID+' a.deleteX').animate(
+			{left: "+=15", opacity: 0.0},
+			{queue: false, duration: 1000});
+}
 
-function routeIncomingText(txtData) {
-	
+function openOptionsDialog() {
 	
 }
 
@@ -76,10 +94,11 @@ function handleMessageKeyPress(e) {
 			
 		//	user pressed 'enter' key, check for alt/ctrl modifier
 		case 13:
-			if(e.altKey) {
-				alert('sending message');
-				sendMessage();
-			}
+			if(e.ctrlKey) {
+				var toNumber = $(contactInput).val();
+				var message  = $(messageInput).val();
+				sendMessage(toNumber, message);
+			}				
 			break;
 		
 		//	user pressed 'esc' key, clear out message entry text
@@ -88,7 +107,6 @@ function handleMessageKeyPress(e) {
 			break;
 	}
 	
-	$('meter#charMeter').val($(this).val().length);
 }
 
 function selectConversation() {
@@ -110,7 +128,7 @@ function selectConversation() {
 
 function clearConversation() {
 	var convMesssages = $(convDiv).children();
-	$('div[id=convDiv] > p').empty();
+	$('div#convDiv > p').empty();
 }
 
 function loadConversation(msgArray) {
@@ -132,13 +150,14 @@ function appendMessageToConversation(msgObj) {
 	var msgID = 'msg_' + msgObj._id;
 	var pClass = msgObj.type.startsWith('outbound') ? "fromMe" : "toMe";			
 	var newDiv = $("<div>").addClass("msgRowDiv").attr({id: msgID});
-	var p = $("<p></p>").addClass(pClass);
+	var p = $("<p></p>").addClass(pClass).addClass('deletable').attr({id: msgObj._id});
 	
 	var header = $("<div></div>").addClass('msgHeader');
 	var time = $("<span></span>").addClass('timeLabel').text(msgObj.dateTime);
-	var deleteButton = $("<a>X</a>").addClass('deleteX');
-	deleteButton.click(deleteMessage.bind(undefined, msgObj._id));
+	var deleteButton = $("<a></a>").addClass('deleteX').attr({id: 'delete_'+msgObj._id}).html($("<img>").attr({src: '/img/x.gif'}));
+	deleteButton.click(deleteMessage.bind(undefined, msgObj._id, msgObj.type.startsWith('outbound')));
 	header.append(time, deleteButton);
+	deleteButton.css({opacity: 0.0, left: 15, width: 14, height: 14});
 	
 	var br   = $("<br>");
 	var data;
@@ -147,7 +166,7 @@ function appendMessageToConversation(msgObj) {
 	switch(msgObj.type) {
 		case 'inboundText':
 		case 'outboundText':
-			data = $("<span></span>").text(msgObj.data);
+			data = $("<span></span>").html(msgObj.data.replace(/\n/, '<br>'));
 			break;
 			
 		case 'inboundMedia':
@@ -187,13 +206,41 @@ function appendMessageToConversation(msgObj) {
 	}
 }
 
-function deleteMessage(_msgID) {
+function recvMessage(txtData) {
+	console.log(txtData);
+}
+
+function sendMessage(rec, msg) {
+	if(!msg)
+		return;
+	
+	if(!rec)
+		return alert('Please select a contact');
+	
+	var msgBlob = {
+		contact:	rec,
+		message:	msg
+	};
+	
+	$.post("/outgoing", JSON.stringify(msgBlob))
+	.done(function(data) {
+		appendMessageToConversation(data);
+		scrollToEnd();
+		$(messageInput).val('');
+	}).fail(function(err) {
+		console.log('Error:   ' + err);
+		alert('Error sending message: ' + err);
+	});
+}
+
+function deleteMessage(_msgID, outgoing) {
 	var delRequest = $.ajax({
 		method: 'DELETE',
 		url: '/msg/' + _msgID
 	}).done(function(response) {
-		if(response.success) {
-			$('msg_' + msgID).animate({left: "-100px"}, 1000).remove();
+		console.log(response);
+		if(response && response.success) {
+			$('msg_' + msgID).animate(offsetObject, 1000).remove();
 		}
 		else {
 			notify("Error deleting message: " + response.results);
@@ -210,35 +257,6 @@ function notify(msg) {
 
 function scrollToEnd() {
 	$(convDiv).animate({ scrollTop: $(convDiv).prop("scrollHeight")}, 250);
-}
-
-
-function recvMessage() {}
-
-function sendMessage() {
-	var msg = $(messageInput).val();
-	var rec = $(contactInput).val();
-	
-	if(!msg)
-		return;
-	
-	if(!rec)
-		return alert('Please select a contact');
-	
-	var msgBlob = {
-		contact:	rec,
-		message:	msg		
-	};
-	
-	$.post("/outgoing", JSON.stringify(msgBlob))
-	.done(function(data) {
-		appendMessageToConversation(data);
-		scrollToEnd();
-		$(messageInput).val('');
-	}).fail(function(err) {
-		console.log('Error:   ' + err);
-		alert('Error sending message: ' + err);
-	});
 }
 
 
@@ -271,8 +289,6 @@ var textareaResize = function(source, dest) {
 		var top = -26 + (40 - dest.width());
 		//dest.css({right: right, top: top});
 		
-		console.log(`Right: ${right}`);
-		console.log(`Top:   ${top}`);
         //dest.outerHeight(source.outerHeight());
     };
 

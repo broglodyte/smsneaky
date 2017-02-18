@@ -8,7 +8,7 @@
     /* transition:         all 3s cubic-bezier(1, 0, 0, 1); */
 }
 .clearable{
-  background: #fff url(https://i.stack.imgur.com/mJotv.gif) no-repeat right -10px center;
+  background: #fff url(/img/x.gif) no-repeat right -10px center;
   border: 1px solid #999;
   padding: 3px 18px 3px 4px;     /* Use the same right padding (18) in jQ! */
   border-radius: 3px;
@@ -19,7 +19,7 @@
 .clearable::-ms-clear {display: none; width:0; height:0;} /* Remove IE default X */
 
 .deletable {
-	
+	/* transition: all 0.4s; */
 	
 }
 
@@ -133,7 +133,7 @@ input:focus {
     background-color: #ddffdd;
 }
 
-img {
+img.mmsMedia {
     max-width: 100%;
     height: auto;
     filter: blur(15px) brightness(0.8) opacity(0.6);
@@ -142,7 +142,7 @@ img {
     transition: all 1s ease;
 }
 
-img:hover {
+img.mmsMedia:hover {
 	filter: blur(0px) brightness(1.0);
 	transform: scale(1.0);
 	border: solid 1px black;
@@ -158,18 +158,24 @@ div.msgHeader {
 }
 
 .deleteX {
-	font-family: sans serif;
-	text-decoration: none;
+	/* display: none; */
+	position: relative;
+	/* font-family: sans serif; */
+	/* text-decoration: none; */
 	float: right;
+	/* right: -10px; */
+	/* top: 3px; */
 }
 .deleteX:hover {
-	color: gray;
-	text-shadow: 0px 0px 8px black;
+	/* color: gray; */ 
+	/* filter: brightness(1.2); */
+	cursor: hand;
 }
 
 .timeLabel {
     font-style: italic;
     font-size: 0.7em;
+	margin-right: 15px;
 	float: left;
 }
 
