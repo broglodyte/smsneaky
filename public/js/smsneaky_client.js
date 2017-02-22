@@ -1,9 +1,11 @@
 //	smsneaky_client.js
 //
-var convDiv = "div#convDiv";
+
+var convDiv      = "div#convDiv";
 var contactInput = "input#contact";
 var messageInput = "textarea#messageInput";
 var optionsLink  = "a#optionsLink";
+var charMeter    = 'meter#charMeter';
 
 $(document).ready(function() {
 	$.ajaxSetup({contentType: "application/json; charset=utf-8"});
@@ -11,8 +13,8 @@ $(document).ready(function() {
 	
 	$(contactInput).on({
 		input:		selectConversation,
-		select:		selectConversation,
-		change:		selectConversation,
+		// select:		selectConversation,
+		// change:		selectConversation,
 		keydown:	handleContactKeyPress
 	});
 	$(messageInput).keydown(handleMessageKeyPress);
@@ -29,41 +31,37 @@ $(document).ready(function() {
 		$(this).removeClass('clearX onClearX').val('').change();
 	});
 	$(document).keypress(function() {
-		$('meter#charMeter').val($(messageInput).val().length);
+		updateCharMeter();
 	});
 	
 	$(document).on('mouseenter', '.deletable', function(e) {
-		
 		showX(this.id);
 	});
 	
-	$(document).on('mouseleave', '.deletable', function(e) {
-		
+	$(document).on('mouseleave', '.deletable', function(e) {	
 		hideX(this.id);
 	});
 	
-	$(messageInput).on('change', function(ev) {		
-		
-	});
-	
-	textareaResize($(messageInput), $("#charMeter"));	
-	
-	$(optionsLink).click(openOptionsDialog);
+	setInterval(updateCharMeter, 500);
 	
 	var socket = io();
 	socket.on('incoming', recvMessage);
 });
 
+function updateCharMeter() {
+	$(charMeter).val($(messageInput).val().length);
+}
+
 function showX(msgID) {
-	$('div#msg_'+msgID.toString()+' a.deleteX').animate(
-			{left: "-=15", opacity: 1.0},
-			{queue: false, duration: 600});
+	$('div#msg_'+msgID+' img.deleteX').animate(
+			{left: "1px", opacity: 1.0},
+			{queue: false, duration: 200});
 }
 
 function hideX(msgID) {	
-	$('div#msg_'+msgID+' a.deleteX').animate(
-			{left: "+=15", opacity: 0.0},
-			{queue: false, duration: 1000});
+	$('div#msg_'+msgID+' img.deleteX').animate(
+			{left: "15px", opacity: 0.0},
+			{queue: false, duration: 200});
 }
 
 function openOptionsDialog() {
@@ -88,9 +86,9 @@ function handleContactKeyPress(e) {
 //	do stuff when key is pressed from [message]
 function handleMessageKeyPress(e) {
 	switch(e.which) {
-		case 9:
-			$(contactInput).focus();
-			break;
+		// case 9:
+			// $(contactInput).focus();
+			// break;
 			
 		//	user pressed 'enter' key, check for alt/ctrl modifier
 		case 13:
@@ -110,7 +108,8 @@ function handleMessageKeyPress(e) {
 }
 
 function selectConversation() {
-	$(convDiv).empty();
+	// $(convDiv).empty();
+	clearConversation();
 	
 	var selectedConversation = $(contactInput).val();
 	if(!selectedConversation || !selectedConversation.length)
@@ -128,7 +127,16 @@ function selectConversation() {
 
 function clearConversation() {
 	var convMesssages = $(convDiv).children();
-	$('div#convDiv > p').empty();
+	$(convDiv).children().sort(function(a, b) {
+		if(a.id < b.id)
+			return -1;
+		if(a.id > b.id)
+			return 1;
+		return 0;
+	}).each(function(i) {
+		this.remove();
+		
+	});
 }
 
 function loadConversation(msgArray) {
@@ -154,10 +162,11 @@ function appendMessageToConversation(msgObj) {
 	
 	var header = $("<div></div>").addClass('msgHeader');
 	var time = $("<span></span>").addClass('timeLabel').text(msgObj.dateTime);
-	var deleteButton = $("<a></a>").addClass('deleteX').attr({id: 'delete_'+msgObj._id}).html($("<img>").attr({src: '/img/x.gif'}));
+	// var deleteButton = $("<a></a>").addClass('deleteX').attr({id: 'delete_'+msgObj._id}).html($("<img>").attr({src: '/img/x.gif'}));
+	var deleteButton = $("<img>").addClass('deleteX').attr({src: '/img/x_medium.gif', id: 'delete_'+msgObj._id});
 	deleteButton.click(deleteMessage.bind(undefined, msgObj._id, msgObj.type.startsWith('outbound')));
 	header.append(time, deleteButton);
-	deleteButton.css({opacity: 0.0, left: 15, width: 14, height: 14});
+	deleteButton.css({opacity: 0.0, left: 10, top: 0, width: 7, height: 7});
 	
 	var br   = $("<br>");
 	var data;
@@ -176,12 +185,12 @@ function appendMessageToConversation(msgObj) {
 					src:	msgObj.data,
 					id:		'img_'+msgObj._id+'_blurred'
 				});
-			var img_Clear = $('<img>')
-				.addClass('clearImage')
-				.attr({
-					src:	msgObj.data,
-					id:		'img_'+msgObj._id+'_clear'
-				})
+			// var img_Clear = $('<img>')
+				// .addClass('clearImage')
+				// .attr({
+					// src:	msgObj.data,
+					// id:		'img_'+msgObj._id+'_clear'
+				// })
 				
 			data = $('<div></div>').addClass('imgContainer').append(img_Blurred);
 			
@@ -236,16 +245,16 @@ function sendMessage(rec, msg) {
 function deleteMessage(_msgID, outgoing) {
 	var delRequest = $.ajax({
 		method: 'DELETE',
-		url: '/msg/' + _msgID
-	}).done(function(response) {
-		console.log(response);
-		if(response && response.success) {
-			$('msg_' + msgID).animate(offsetObject, 1000).remove();
+		url: '/msg/' + _msgID,
+		complete: function(response) {
+			console.log(response);
+			if(response && response.status === 204) {
+				$('#msg_' + _msgID).fadeOut(1000);//.animate({left: (outgoing ? '-' : '+' ) + '=500'}, 1000).remove();
+			}
+			else {
+				notify("Error deleting message: " + response.results);
+			}
 		}
-		else {
-			notify("Error deleting message: " + response.results);
-		}
-		
 	}).fail(function(blah) { 
 		alert('FAIL');
 	});

@@ -19,8 +19,8 @@
 .clearable::-ms-clear {display: none; width:0; height:0;} /* Remove IE default X */
 
 .deletable {
-	/* transition: all 0.4s; */
-	
+	transition: all 0.4s;
+	overflow: hidden;
 }
 
 div#convDiv {
@@ -31,6 +31,7 @@ div#convDiv {
     border: 1px solid gray;
     border-radius: 3px;
     overflow-y: auto;
+	overflow-x: hidden;
     padding-bottom: 7px;
     -webkit-transition: all 1s cubic-bezier(1, 0, 0, 1);
     transition: all 1s cubic-bezier(1, 0, 0, 1);
@@ -158,18 +159,13 @@ div.msgHeader {
 }
 
 .deleteX {
-	/* display: none; */
 	position: relative;
-	/* font-family: sans serif; */
-	/* text-decoration: none; */
 	float: right;
-	/* right: -10px; */
-	/* top: 3px; */
 }
 .deleteX:hover {
-	/* color: gray; */ 
-	/* filter: brightness(1.2); */
-	cursor: hand;
+	/* color: gray; */
+	filter: opacity(0.6);
+	cursor: pointer;
 }
 
 .timeLabel {
