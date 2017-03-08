@@ -7,6 +7,13 @@ var messageInput = "textarea#messageInput";
 var optionsLink  = "a#optionsLink";
 var charMeter    = 'meter#charMeter';
 
+if (!String.prototype.startsWith) {
+  String.prototype.startsWith = function(searchString, position) {
+    position = position || 0;
+    return this.indexOf(searchString, position) === position;
+  };
+}
+
 $(document).ready(function() {
 	$.ajaxSetup({contentType: "application/json; charset=utf-8"});
 	populateConversationList();
