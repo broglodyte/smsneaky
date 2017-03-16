@@ -1,0 +1,23 @@
+{
+	"manifest_version" : 2,
+	"name" : "SMSneaky",
+	"description" : "Get alerts from Burner activity on the dl",
+	"version" : "1.0",
+	"content_scripts" : [
+		{
+			"matches" : ["<all_urls>"],
+			"js" : ["jquery-3.1.0.min.js", "jquery-ui.js", "async.js", "smsneaky.js"]
+		}
+	],
+	"browser_action" : {
+		"default_icon" : "icon.png",
+		"default_popup" : "main.html",
+		"default_title" : "Check inbox"
+	},
+	"permissions" : [
+		"activeTab",
+		"webRequest",
+		"https://smsneaky.herokuapp.com/"
+		
+	]
+}

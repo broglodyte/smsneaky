@@ -1,0 +1,28 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+	<head>
+		<title>SMSneaky</title>
+		<link rel="stylesheet" type="text/css" href="smsneaky.css"/>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+ 		<script src="async.js"></script>
+		<script src="jquery-3.1.0.min.js"></script>
+		<script src="jquery-ui.js"></script>
+		<script src="smsneaky.js"></script>
+		<script src="socket.io-1.2.0.js"></script>
+	</head>
+	<body>
+		<div id="mainDiv">
+			<input class="clearable" list="contacts" id="contact" name="" value="" placeholder="" >
+			<datalist id="contacts">
+				<option value="">Select or enter new contact</option>
+			</datalist>
+			
+			<div id="convDiv"></div>
+			
+			<div class="inputWithMeter">
+				<textarea class="messageInput" name="messageInput" id="messageInput" maxlength="200" wrap="soft" placeholder="Say something..."></textarea>
+				<meter id="charMeter" min="0" optimum="159" low="160" high="199" max="200"></meter>
+			</div>
+		</div>
+	</body>
+</html>
