@@ -1,7 +1,7 @@
 //	smsneaky_client.js
 //
 
-var convDiv      = "div#convDiv";
+var convDisplayDiv      = "div#convDisplayDiv";
 var contactInput = "input#contact";
 var messageInput = "textarea#messageInput";
 var optionsLink  = "a#optionsLink";
@@ -80,7 +80,7 @@ function handleContactKeyPress(e) {
 	switch(e.keyCode) {
 		case 27:
 			$(contactInput).val('');
-			$(convDiv).empty();
+			$(convDisplayDiv).empty();
 			break;
 			
 		case 9:
@@ -115,7 +115,7 @@ function handleMessageKeyPress(e) {
 }
 
 function selectConversation() {
-	// $(convDiv).empty();
+	// $(convDisplayDiv).empty();
 	clearConversation();
 	
 	var selectedConversation = $(contactInput).val();
@@ -133,8 +133,8 @@ function selectConversation() {
 }
 
 function clearConversation() {
-	var convMesssages = $(convDiv).children();
-	$(convDiv).children().sort(function(a, b) {
+	var convMesssages = $(convDisplayDiv).children();
+	$(convDisplayDiv).children().sort(function(a, b) {
 		if(a.id < b.id)
 			return -1;
 		if(a.id > b.id)
@@ -217,7 +217,7 @@ function appendMessageToConversation(msgObj) {
 	if(!invalid) {
 		p.append(header, br, data);
 		newDiv.append(p).hide();
-		$(convDiv).append(newDiv);
+		$(convDisplayDiv).append(newDiv);
 		newDiv.fadeIn({queue: false});
 	}
 }
@@ -272,7 +272,7 @@ function notify(msg) {
 }
 
 function scrollToEnd() {
-	$(convDiv).animate({ scrollTop: $(convDiv).prop("scrollHeight")}, 250);
+	$(convDisplayDiv).animate({ scrollTop: $(convDisplayDiv).prop("scrollHeight")}, 250);
 }
 
 

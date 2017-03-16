@@ -50,7 +50,8 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.locals.db = db = database;
 	console.log("> MongoDB connection established");
 
-	app.use(/^\/(inbox|sent|conversation|contacts|main|outgoing).*$/, auth);
+	app.use(/^[^i]$/, auth);
+	//app.use(/^\/(inbox|sent|conversation|contacts|main|outgoing).*$/, auth);
 	
 	app.use(express.static('public'));
 	
@@ -64,7 +65,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		
 		app.get('/main', (req, res) => {
 			console.log('> Reading main.html...');
-			fs.readFile('main.html', (err, data) => {
+			fs.readFile(path.join(__dirname, 'public/main.html'), (err, data) => {
 				if(err)
 					return res.status(500).send(err);
 				
@@ -318,7 +319,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		});
 		
 		//	Incoming text webhook (used by Burner)
-		app.post('/incoming', [jsonParser, formatIncomingMessageJSON], (req, res) => {
+		app.post('/i', [jsonParser, formatIncomingMessageJSON], (req, res) => {
 			console.log(`> Incoming text-message...`);
 			
 			db.collection('messages').insertOne(req.incoming, (err, r) => {

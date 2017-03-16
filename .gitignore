@@ -39,3 +39,5 @@ jspm_packages
 texts.txt
 public/favicon/*
 .vs
+/bin/Microsoft.NodejsTools.WebRole.dll
+/obj/Debug
