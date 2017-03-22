@@ -1,9 +1,66 @@
+/* The side navigation menu */
+
+body {
+	transition: background-color 0.5s;
+	
+}
+
+.sideNav {
+    height: 100%; /* 100% Full-height */
+    width: 0; /* 0 width - change this with JavaScript */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Stay on top */
+    top: 0;
+    left: 0;
+    background-color: #111; /* Black*/
+    overflow-x: hidden; /* Disable horizontal scroll */
+    padding-top: 60px; /* Place content 60px from the top */
+    transition: width 0.5s; /* 0.5 second transition effect to slide in the sideNav */
+}
+
+/* The navigation menu links */
+.sideNav a {
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    font-size: 25px;
+    color: #818181;
+    display: block;
+    transition: 0.3s
+}
+
+/* When you mouse over the navigation links, change their color */
+.sideNav a:hover, .offcanvas a:focus{
+    color: #f1f1f1;
+}
+
+/* Position and style the close button (top right corner) */
+.sideNav .closebtn {
+    position: absolute;
+    top: 0;
+    right: 25px;
+    font-size: 36px;
+    margin-left: 50px;
+}
+
+/* Style page content - use this if you want to push the page content to the right when you open the side navigation */
+#convDiv {
+    transition: background-color .5s;
+    padding: 1px;
+}
+
+/* On smaller screens, where height is less than 450px, change the style of the sideNav (less padding and a smaller font size) */
+@media screen and (max-height: 450px) {
+    .sideNav {padding-top: 15px;}
+    .sideNav a {font-size: 18px;}
+}
+
 #mainDiv {
     font-size: 0.9em;
     width: 350px;
+	height: auto;
     padding: 6px;
     border: 1px solid black;
-	float: right;
+	/* float: right; */
     /* -webkit-transition: all 3s cubic-bezier(1, 0, 0, 1); */
     /* transition:         all 3s cubic-bezier(1, 0, 0, 1); */
 }
@@ -102,8 +159,9 @@ p.toMe:hover {
 }
 
 textarea#messageInput {
+	bottom: 1px;
 	background-color: #f8f8f8;
-	resize: vertical;
+	resize: none;
 	box-sizing: border-box;
 	border: 1px solid #adadad;
 	border-radius: 5px;
@@ -176,9 +234,9 @@ div.msgHeader {
 }
 
 meter#charMeter {
-	-webkit-transform: rotate(90deg);
-	-moz-transform: rotate(90deg);
-	-o-transform: rotate(90deg);
+	-webkit-transform: rotate(270deg);
+	-moz-transform: rotate(270deg);
+	-o-transform: rotate(270deg);
 	transform: rotate(270deg);
 	right: -12px;
 	float: right;

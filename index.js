@@ -53,7 +53,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 	app.use(/^[^i]$/, auth);
 	//app.use(/^\/(inbox|sent|conversation|contacts|main|outgoing).*$/, auth);
 	
-	app.use(express.static('public'));
+	app.use(express.static('client'));
 	
 	/* /// INBOX REQUESTS /// */
 	if(routeMessages) {
@@ -65,7 +65,7 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 		
 		app.get('/main', (req, res) => {
 			console.log('> Reading main.html...');
-			fs.readFile(path.join(__dirname, 'public/main.html'), (err, data) => {
+			fs.readFile(path.join(__dirname, 'client/main.html'), (err, data) => {
 				if(err)
 					return res.status(500).send(err);
 				

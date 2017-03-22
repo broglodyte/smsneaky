@@ -1,11 +1,11 @@
 //	smsneaky_client.js
 //
 
-var convDisplayDiv      = "div#convDisplayDiv";
-var contactInput = "input#contact";
-var messageInput = "textarea#messageInput";
-var optionsLink  = "a#optionsLink";
-var charMeter    = 'meter#charMeter';
+var convDisplayDiv	= "div#convDisplayDiv";
+var contactInput 	= "input#contact";
+var messageInput 	= "textarea#messageInput";
+var optionsLink  	= "a#optionsLink";
+var charMeter    	= 'meter#charMeter';
 
 if (!String.prototype.startsWith) {
   String.prototype.startsWith = function(searchString, position) {
@@ -278,11 +278,15 @@ function scrollToEnd() {
 
 function populateConversationList() {
 	$.getJSON('/conversation', function(convList) {
-		var contactDataList = $("datalist#contacts");
-		contactDataList.empty();
+		var contactsList = $("div#mySideNav ul#contactsList");
+		contactsList.empty();
 		convList.map(function(item) {
-			var newOptionElement = $('<option></option>').text(item.name || '?').attr({value: item.number});
-			contactDataList.append(newOptionElement);
+			var newOptionElement = $('<li></li>')
+										.text(item.name || item.number)
+										.attr({id: 'sideNavLink_'+item.number})
+										.addClass('contactListEntry');
+			
+			contactsList.append(newOptionElement);
 		});
 	});
 }
@@ -324,3 +328,15 @@ var textareaResize = function(source, dest) {
     });
 };
     
+function openNav() {
+    document.getElementById("mySidenav").style.width = document.getElementById("convDiv").style.width;
+    document.getElementById("mySidenav").style.height = document.getElementById("mainDiv").style.height;
+    document.body.style.backgroundColor = "rgba(0,0,0,0.4)";
+}
+
+/* Set the width of the side navigation to 0 */
+function closeNav() {
+    document.getElementById("mySidenav").style.width = "0";
+	// document.getElementById("mySidenav").style.height = "0"
+    document.body.style.backgroundColor = "white";
+}

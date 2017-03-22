@@ -2,31 +2,41 @@
 <html>
 	<head>
 		<title>SMSneaky</title>
-		<link rel="stylesheet" type="text/css" href="smsneaky.css"/>
-		<link rel="stylesheet" type="text/css" href="bootstrap.min.css">
- 		<script src="async.js"></script>
-		<script src="jquery-3.1.0.min.js"></script>
-		<script src="jquery-ui.js"></script>
-        <script src="socket.io-1.2.0.js"></script>
-		<script src="smsneaky.js"></script>
+		<link rel="stylesheet" type="text/css" href="/css/smsneaky.css"/>
+		<link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+ 		<script src="/js/async.js"></script>
+		<script src="/js/jquery.js"></script>
+		<script src="/js/jquery-ui.js"></script>
+        <script src="/js/socket.io-1.2.0.js"></script>
+		<script src="/js/smsneaky.js"></script>
 	</head>
 	<body>
+
+
 		<div id="mainDiv">
-			<datalist id="contacts">
-				<option value="">Select or enter new contact</option>
-			</datalist>
+			<div id="mySidenav" class="sideNav">
+				<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+				
+				<input class="clearable" id="contactInput" name="" value="" placeholder="Enter contact name or phone # to text">
+				<hr>
+				<ul id="contactsList" class="contactsListClass"></ul>
+			</div>
+				<!--<datalist id="contacts">
+					<option value="">Select or enter new contact</option>
+				</datalist>-->
+			<div id="convDiv">
+				<div id="topNav">
+					<a href="#" onclick="openNav(); return false">← Contacts</a>
+					<a href="#" onclick="openOptionsDialog(); return false" style="float: right">Options →</a>
+				</div>
 
-            <div id="convSelectDiv">
 
-                <input class="clearable" id="contactInput" name="" value="" placeholder="">
+				<div id="convDisplayDiv"></div>
 
-            </div>
-
-			<div id="convDisplayDiv"></div>
-
-			<div class="inputWithMeter">
-				<textarea class="messageInput" name="messageInput" id="messageInput" maxlength="200" wrap="soft" placeholder="Say something..."></textarea>
-				<meter value="0" id="charMeter" min="0" optimum="159" low="160" high="199" max="200"></meter>
+				<div class="inputWithMeter">
+					<textarea class="messageInput" name="messageInput" id="messageInput" maxlength="200" wrap="soft" placeholder="Say something..."></textarea>
+					<meter value="0" id="charMeter" min="0" optimum="159" low="160" high="199" max="200"></meter>
+				</div>
 			</div>
 		</div>
 	</body>
