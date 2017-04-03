@@ -17,8 +17,8 @@
 			<div id="mySidenav" class="sideNav">
 				<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
 				
-				<input class="clearable" id="contactInput" name="" value="" placeholder="Enter contact name or phone # to text">
-				<hr>
+				<input class="clearable" id="contactInput" name="contactInput" value="" placeholder="Enter contact name or phone # to text">
+				
 				<ul id="contactsList" class="contactsListClass"></ul>
 			</div>
 				<!--<datalist id="contacts">
@@ -37,6 +37,11 @@
 					<textarea class="messageInput" name="messageInput" id="messageInput" maxlength="200" wrap="soft" placeholder="Say something..."></textarea>
 					<meter value="0" id="charMeter" min="0" optimum="159" low="160" high="199" max="200"></meter>
 				</div>
+			</div>
+			<div id="optionsDialogDiv" class="optionsDlg">
+				Coming soon...
+				<p>
+				<a href="#" onclick="closeOptionsDialog(); return false">Close</a>
 			</div>
 		</div>
 	</body>

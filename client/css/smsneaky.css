@@ -6,31 +6,36 @@ body {
 }
 
 .sideNav {
-    height: 100%; /* 100% Full-height */
+	border: ridge 2px #666;
+	border-radius: 4px;
+    height: auto; /* 100% Full-height */
     width: 0; /* 0 width - change this with JavaScript */
     position: fixed; /* Stay in place */
     z-index: 1; /* Stay on top */
     top: 0;
     left: 0;
-    background-color: #111; /* Black*/
+    background-color: #EEE; /* Black*/
     overflow-x: hidden; /* Disable horizontal scroll */
     padding-top: 60px; /* Place content 60px from the top */
-    transition: width 0.5s; /* 0.5 second transition effect to slide in the sideNav */
+    transition: 0.5s; /* 0.5 second transition effect to slide in the sideNav */
 }
 
 /* The navigation menu links */
-.sideNav a {
-    padding: 8px 8px 8px 32px;
+.sideNav li {
+    padding: 4px 4px 4px 4px;
     text-decoration: none;
-    font-size: 25px;
+    font-size: 20px;
     color: #818181;
     display: block;
-    transition: 0.3s
+    transition: 0.5s
 }
 
 /* When you mouse over the navigation links, change their color */
-.sideNav a:hover, .offcanvas a:focus{
-    color: #f1f1f1;
+.sideNav li:hover, .offcanvas li:focus{
+    color: #8080ff;
+	padding-bottom: 7px;
+	padding-top: 7px;
+	font-size: 22px;
 }
 
 /* Position and style the close button (top right corner) */
@@ -40,6 +45,28 @@ body {
     right: 25px;
     font-size: 36px;
     margin-left: 50px;
+}
+.sideNav .closebtn:hover {
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: none;
+	font-weight: bold;
+}
+
+.optionsDlg {
+    height: 100%; /* 100% Full-height */
+    width: 0; /* 0 width - change this with JavaScript */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Stay on top */
+    top: 0;
+    right: 0;
+    background-color: #111; /* Black*/
+    overflow-x: hidden; /* Disable horizontal scroll */
+    padding-top: 60px; /* Place content 60px from the top */
+    transition: width 0.5s; /* 0.5 second transition effect to slide in the sideNav */
+	float: right;
+	/* border: dashed 1px red; */
 }
 
 /* Style page content - use this if you want to push the page content to the right when you open the side navigation */

@@ -1,12 +1,12 @@
 {
 	"manifest_version" : 2,
-	"name" : "SMSneaky",
+	"name" : "Burn Notify",
 	"description" : "Get alerts from Burner activity on the dl",
 	"version" : "1.0",
 	"content_scripts" : [
 		{
 			"matches" : ["<all_urls>"],
-			"js" : ["jquery-3.1.0.min.js", "jquery-ui.js", "async.js", "smsneaky.js"]
+			"js" : ["js/smsneaky.js", "js/jquery.js", "js/jquery-ui.js", "js/async.js", "js/socket.io.js"]
 		}
 	],
 	"browser_action" : {

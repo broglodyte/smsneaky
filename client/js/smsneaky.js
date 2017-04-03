@@ -6,6 +6,9 @@ var contactInput 	= "input#contact";
 var messageInput 	= "textarea#messageInput";
 var optionsLink  	= "a#optionsLink";
 var charMeter    	= 'meter#charMeter';
+var sideNav			= 'div#mySidenav';
+var sideNavEntry	= 'li.contactListEntry';
+var optionsDlg		= 'div#optionsDialogDiv'
 
 if (!String.prototype.startsWith) {
   String.prototype.startsWith = function(searchString, position) {
@@ -37,15 +40,23 @@ $(document).ready(function() {
 		ev.preventDefault();
 		$(this).removeClass('clearX onClearX').val('').change();
 	});
-	$(document).keypress(function() {
+	$(document).keydown(function(e) {
+		if(e.which === 27) {
+			if(isVisible(sideNav))
+				closeNav();
+			if(isVisible(optionsDlg))
+				closeOptionsDialog();
+		}
 		updateCharMeter();
 	});
-	
+	$(sideNavEntry).on('click', function(e) {
+		
+	});
 	$(document).on('mouseenter', '.deletable', function(e) {
 		showX(this.id);
 	});
 	
-	$(document).on('mouseleave', '.deletable', function(e) {	
+	$(document).on('mouseleave', '.deletable', function(e) {
 		hideX(this.id);
 	});
 	
@@ -57,22 +68,6 @@ $(document).ready(function() {
 
 function updateCharMeter() {
 	$(charMeter).val($(messageInput).val().length);
-}
-
-function showX(msgID) {
-	$('div#msg_'+msgID+' img.deleteX').animate(
-			{left: "1px", opacity: 1.0},
-			{queue: false, duration: 200});
-}
-
-function hideX(msgID) {	
-	$('div#msg_'+msgID+' img.deleteX').animate(
-			{left: "15px", opacity: 0.0},
-			{queue: false, duration: 200});
-}
-
-function openOptionsDialog() {
-	
 }
 
 //	do stuff when key is pressed at [contact] input
@@ -278,7 +273,7 @@ function scrollToEnd() {
 
 function populateConversationList() {
 	$.getJSON('/conversation', function(convList) {
-		var contactsList = $("div#mySideNav ul#contactsList");
+		var contactsList = $("div#mySidenav ul#contactsList");
 		contactsList.empty();
 		convList.map(function(item) {
 			var newOptionElement = $('<li></li>')
@@ -297,40 +292,21 @@ function embiggenPicture(imgID) {
 	var docHeight = $("div#mainDiv").height();
 }
 
+function isVisible(elem) {
+	var jqObj = $(elem);
+	if(!jqObj)
+		return false;
+	
+	return (jqObj.width() > 0 && jqObj.is(":visible"));	
+}
 
-var textareaResize = function(source, dest) {
-    var resizeInt = null;
-    
-    // the handler function
-    var resizeEvent = function() {
-		var textBoxHeight = source.outerHeight();
-		
-		var right = -12 + (40 - dest.width());
-		var top = -26 + (40 - dest.width());
-		//dest.css({right: right, top: top});
-		
-        //dest.outerHeight(source.outerHeight());
-    };
-
-    source.on("mousedown", function(e) {
-        resizeInt = setInterval(resizeEvent, 10);
-    });
-
-    // The mouseup event stops the interval,
-    // then call the resize event one last time.
-    // We listen for the whole window because in some cases,
-    // the mouse pointer may be on the outside of the textarea.
-    $(window).on("mouseup", function(e) {
-        if (resizeInt !== null) {
-            clearInterval(resizeInt);
-        }
-        resizeEvent();
-    });
-};
-    
 function openNav() {
-    document.getElementById("mySidenav").style.width = document.getElementById("convDiv").style.width;
-    document.getElementById("mySidenav").style.height = document.getElementById("mainDiv").style.height;
+	var navWidth = $('#convDiv').width();
+	var navHeight = $('#mainDiv').height();
+	console.log('nav width:  ' + navWidth);
+	console.log('nav height: ' + navHeight);
+    $("#mySidenav").width(navWidth).height(navHeight);;
+//    document.getElementById("mySidenav").style.height = document.getElementById("mainDiv").style.height;
     document.body.style.backgroundColor = "rgba(0,0,0,0.4)";
 }
 
@@ -339,4 +315,24 @@ function closeNav() {
     document.getElementById("mySidenav").style.width = "0";
 	// document.getElementById("mySidenav").style.height = "0"
     document.body.style.backgroundColor = "white";
+}
+
+function openOptionsDialog() {
+	
+}
+
+function closeOptionsDialog() {
+	
+}
+
+function showX(msgID) {
+	$('div#msg_'+msgID+' img.deleteX').animate(
+			{left: "1px", opacity: 1.0},
+			{queue: false, duration: 200});
+}
+
+function hideX(msgID) {	
+	$('div#msg_'+msgID+' img.deleteX').animate(
+			{left: "15px", opacity: 0.0},
+			{queue: false, duration: 200});
 }
