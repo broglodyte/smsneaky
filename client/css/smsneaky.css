@@ -6,45 +6,64 @@ body {
 }
 
 .sideNav {
+	opacity: 0.0;
 	border: ridge 2px #666;
-	border-radius: 4px;
-    height: auto; /* 100% Full-height */
-    width: 0; /* 0 width - change this with JavaScript */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Stay on top */
-    top: 0;
-    left: 0;
-    background-color: #EEE; /* Black*/
-    overflow-x: hidden; /* Disable horizontal scroll */
-    padding-top: 60px; /* Place content 60px from the top */
-    transition: 0.5s; /* 0.5 second transition effect to slide in the sideNav */
+	border-radius: 2px;
+	height: 575px; /* 100% Full-height */
+	width: 0px; /* 0 width - change this with JavaScript */
+	position: absolute; /* Stay in place */
+	z-index: 1; /* Stay on top */
+	top: 0px;
+	left: -1px;
+	background-color: #EEE; /* Black*/
+	overflow-x: hidden; /* Disable horizontal scroll */
+	overflow-y: scroll;
+	/* padding-top: 60px; /* Place content 60px from the top */
+	/* transition: 0.4s; /* 0.5 second transition effect to slide in the sideNav  */
+}
+
+.sideNav ul.contactsListClass {
+	clear: both;
+}
+
+.sideNav #contactInput {
+	float: left;
+	width: 88%;
+	display: inline-block;
+	/* position: absolute; */
+	margin: 6px;
 }
 
 /* The navigation menu links */
 .sideNav li {
-    padding: 4px 4px 4px 4px;
+    margin: 4px 4px 4px 4px;
     text-decoration: none;
     font-size: 20px;
     color: #818181;
     display: block;
-    transition: 0.5s
+    transition: 0.15s;
+	cursor: pointer;
 }
 
 /* When you mouse over the navigation links, change their color */
 .sideNav li:hover, .offcanvas li:focus{
     color: #8080ff;
-	padding-bottom: 7px;
-	padding-top: 7px;
+	/* margin-bottom: 6px; */
+	/* margin-top: 6px; */
 	font-size: 22px;
 }
 
 /* Position and style the close button (top right corner) */
 .sideNav .closebtn {
-    position: absolute;
-    top: 0;
-    right: 25px;
-    font-size: 36px;
-    margin-left: 50px;
+	float: right;
+	display: inline-block;
+	/* position: absolute; */
+	/* top: 0; */
+	/* right: 25px; */
+	font-size: 32px;
+	/* margin-left: 50px; */
+	margin-right: 4px;
+	margin-top: -10px;
 }
 .sideNav .closebtn:hover {
 	text-decoration: none;

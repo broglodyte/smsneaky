@@ -1,14 +1,14 @@
 //	smsneaky_client.js
 //
 
-var convDisplayDiv	= "div#convDisplayDiv";
-var contactInput 	= "input#contact";
-var messageInput 	= "textarea#messageInput";
-var optionsLink  	= "a#optionsLink";
-var charMeter    	= 'meter#charMeter';
-var sideNav			= 'div#mySidenav';
-var sideNavEntry	= 'li.contactListEntry';
-var optionsDlg		= 'div#optionsDialogDiv'
+var convDisplayDiv		= "div#convDisplayDiv";
+var contactInput		= "input#contactInput";
+var messageInput		= "textarea#messageInput";
+var optionsLink			= "a#optionsLink";
+var charMeter			= 'meter#charMeter';
+var sideNav				= 'div#mySidenav';
+var contactListEntry	= sideNav + ' li';	//'li.contactListEntry';
+var optionsDlg			= 'div#optionsDialogDiv'
 
 if (!String.prototype.startsWith) {
   String.prototype.startsWith = function(searchString, position) {
@@ -48,9 +48,6 @@ $(document).ready(function() {
 				closeOptionsDialog();
 		}
 		updateCharMeter();
-	});
-	$(sideNavEntry).on('click', function(e) {
-		
 	});
 	$(document).on('mouseenter', '.deletable', function(e) {
 		showX(this.id);
@@ -109,14 +106,15 @@ function handleMessageKeyPress(e) {
 	
 }
 
-function selectConversation() {
+function selectConversation(ev) {
 	// $(convDisplayDiv).empty();
 	clearConversation();
-	
-	var selectedConversation = $(contactInput).val();
+//	debugger;
+	var selectedConversation = $('a#'+ev.currentTarget.id).data('contactNumber')
 	if(!selectedConversation || !selectedConversation.length)
 		return;
 	
+	$(contactInput).val(selectedConversation);
 	var conversationUrl = '/conversation/' + selectedConversation;
 	
 	$.getJSON(conversationUrl, function(conversation) {
@@ -124,6 +122,7 @@ function selectConversation() {
 		
 		//	[conversation] should be a timestamp-ordered list of message objects. 
 		loadConversation(conversation);
+		closeNav();
 	});
 }
 
@@ -164,7 +163,6 @@ function appendMessageToConversation(msgObj) {
 	
 	var header = $("<div></div>").addClass('msgHeader');
 	var time = $("<span></span>").addClass('timeLabel').text(msgObj.dateTime);
-	// var deleteButton = $("<a></a>").addClass('deleteX').attr({id: 'delete_'+msgObj._id}).html($("<img>").attr({src: '/img/x.gif'}));
 	var deleteButton = $("<img>").addClass('deleteX').attr({src: '/img/x_medium.gif', id: 'delete_'+msgObj._id});
 	deleteButton.click(deleteMessage.bind(undefined, msgObj._id, msgObj.type.startsWith('outbound')));
 	header.append(time, deleteButton);
@@ -251,7 +249,7 @@ function deleteMessage(_msgID, outgoing) {
 		complete: function(response) {
 			console.log(response);
 			if(response && response.status === 204) {
-				$('#msg_' + _msgID).fadeOut(1000);//.animate({left: (outgoing ? '-' : '+' ) + '=500'}, 1000).remove();
+				$('#msg_' + _msgID).fadeOut(500);//.animate({left: (outgoing ? '-' : '+' ) + '=500'}, 1000).remove();
 			}
 			else {
 				notify("Error deleting message: " + response.results);
@@ -276,12 +274,15 @@ function populateConversationList() {
 		var contactsList = $("div#mySidenav ul#contactsList");
 		contactsList.empty();
 		convList.map(function(item) {
-			var newOptionElement = $('<li></li>')
+			var newContactLink = $('<a></a>')
 										.text(item.name || item.number)
-										.attr({id: 'sideNavLink_'+item.number})
-										.addClass('contactListEntry');
-			
-			contactsList.append(newOptionElement);
+										.attr({id: 'sideNavLink_'+item.number, href: "#"})
+										.addClass('contactListLink')
+										.on('click', selectConversation);
+			newContactLink.data("contactNumber", item.number)
+			var newContactListItem = $('<li></li>').append(newContactLink).appendTo(contactsList);
+			console.log('contact [' + item.number + '] added..');
+//			contactsList.append(newOptionElement);
 		});
 	});
 }
@@ -301,18 +302,31 @@ function isVisible(elem) {
 }
 
 function openNav() {
-	var navWidth = $('#convDiv').width();
-	var navHeight = $('#mainDiv').height();
+	var navWidth = $('#mainDiv').outerWidth();
+	var navHeight = $('#mainDiv').outerHeight();
 	console.log('nav width:  ' + navWidth);
 	console.log('nav height: ' + navHeight);
-    $("#mySidenav").width(navWidth).height(navHeight);;
+//    $("#mySidenav").css({display: "block", border: "solid 1px black"}).width(navWidth);	//.height(navHeight);
+	$("#mySidenav").animate({
+		width: navWidth,
+		opacity: 0.9,
+		queue: false,
+		duration: 300
+	});
 //    document.getElementById("mySidenav").style.height = document.getElementById("mainDiv").style.height;
     document.body.style.backgroundColor = "rgba(0,0,0,0.4)";
 }
 
 /* Set the width of the side navigation to 0 */
 function closeNav() {
-    document.getElementById("mySidenav").style.width = "0";
+//    $("#mySidenav").width(0)/*.height(0)*/.css({border: "none"});
+
+	$("#mySidenav").animate({
+		width: 0,
+		opacity: 0.0,
+		queue: false,
+		duration: 300
+	});
 	// document.getElementById("mySidenav").style.height = "0"
     document.body.style.backgroundColor = "white";
 }
