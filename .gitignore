@@ -41,3 +41,4 @@ public/favicon/*
 .vs
 /bin/Microsoft.NodejsTools.WebRole.dll
 /obj/Debug
+/client/js/bootstrap.js

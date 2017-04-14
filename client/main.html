@@ -7,12 +7,11 @@
  		<script src="/js/async.js"></script>
 		<script src="/js/jquery.js"></script>
 		<script src="/js/jquery-ui.js"></script>
+		<script src="/js/bootstrap.min.js"></script>
         <script src="/js/socket.io.js"></script>
 		<script src="/js/smsneaky.js"></script>
 	</head>
 	<body>
-
-
 		<div id="mainDiv">
 			<div id="mySidenav" class="sideNav">
 				<input class="clearable" id="contactInput" name="contactInput" value="" placeholder="Enter contact name or phone # to text"> <a href="#" class="closebtn" onclick="closeNav()">&times;</a>
@@ -22,6 +21,10 @@
 			</div>
 			
 			<div id="convDiv">
+				<div id="headerDiv">
+					<span id="topHeaderSpan"></span>
+					<span id="subHeaderSpan"></span>
+				</div>
 				<div id="topNav">
 					<a href="#" onclick="openNav(); return false">← Contacts</a>
 					<a href="#" onclick="openOptionsDialog(); return false" style="float: right">Options →</a>

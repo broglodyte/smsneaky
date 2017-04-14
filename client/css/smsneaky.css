@@ -53,6 +53,10 @@ body {
 	font-size: 22px;
 }
 
+.sideNav .contactListLink {
+	
+}
+
 /* Position and style the close button (top right corner) */
 .sideNav .closebtn {
 	float: right;
@@ -68,6 +72,11 @@ body {
 .sideNav .closebtn:hover {
 	text-decoration: none;
 }
+
+a {
+	/*transition: all ease-in-out 1s;*/
+}
+
 a:hover {
 	text-decoration: none;
 	font-weight: bold;
@@ -87,6 +96,24 @@ a:hover {
 	float: right;
 	/* border: dashed 1px red; */
 }
+
+
+div#headerDiv {
+	text-align: center;
+	font: message-box;
+}
+
+div#headerDiv #topHeaderSpan {
+	font-size: large;
+	font-variant: small-caps;
+	transition: all ease-in-out 1s;
+}
+
+div#headerDiv #topHeaderSpan:hover {
+	text-shadow: 4px 4px #0D0;
+
+}
+
 
 /* Style page content - use this if you want to push the page content to the right when you open the side navigation */
 #convDiv {

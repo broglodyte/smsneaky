@@ -275,6 +275,7 @@ td,th {
 }
 
 .glyphicon {
+	margin-right: 8px;
 	position: relative;
 	top: 1px;
 	display: inline-block;

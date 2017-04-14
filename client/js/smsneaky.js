@@ -114,7 +114,8 @@ function selectConversation(ev) {
 	if(!selectedConversation || !selectedConversation.length)
 		return;
 	
-	$(contactInput).val(selectedConversation);
+	$( contactInput ).val( selectedConversation );
+
 	var conversationUrl = '/conversation/' + selectedConversation;
 	
 	$.getJSON(conversationUrl, function(conversation) {
@@ -216,7 +217,8 @@ function appendMessageToConversation(msgObj) {
 }
 
 function recvMessage(txtData) {
-	console.log(txtData);
+	console.log( txtData );
+	alert( JSON.stringify( txtData ) );
 }
 
 function sendMessage(rec, msg) {
@@ -277,14 +279,33 @@ function populateConversationList() {
 			var newContactLink = $('<a></a>')
 										.text(item.name || item.number)
 										.attr({id: 'sideNavLink_'+item.number, href: "#"})
-										.addClass('contactListLink')
+										.addClass(item.hasUnread?'ThreadNavUnread':'ThreadNav')
 										.on('click', selectConversation);
-			newContactLink.data("contactNumber", item.number)
-			var newContactListItem = $('<li></li>').append(newContactLink).appendTo(contactsList);
+			newContactLink.data( "contactNumber", item.number )
+			var editContact = $( '<i class="glyphicon glyphicon-edit"></i>' );//.css( { cursor: 'pointer' }).click( handleEditContactClick );
+			\//var deleteConvo = $( '<i class="glyphicon glyphicon-remove"></i>' );//.css( { cursor: 'pointer' }).click( handleDeleteConvoClick );
+
+
+			var newContactListItem = $( '<li></li>' ).append( editContact, newContactLink, deleteConvo ).appendTo( contactsList );
+
+			if(item.name)
+
 			console.log('contact [' + item.number + '] added..');
 //			contactsList.append(newOptionElement);
 		});
 	});
+}
+
+function handleEditContactClick( c )
+{
+
+
+}
+
+function handleDeleteConvoClick( c )
+{
+
+
 }
 
 function embiggenPicture(imgID) {
