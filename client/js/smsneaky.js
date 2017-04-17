@@ -282,8 +282,8 @@ function populateConversationList() {
 										.addClass(item.hasUnread?'ThreadNavUnread':'ThreadNav')
 										.on('click', selectConversation);
 			newContactLink.data( "contactNumber", item.number )
-			var editContact = $( '<i class="glyphicon glyphicon-edit"></i>' );//.css( { cursor: 'pointer' }).click( handleEditContactClick );
-			\//var deleteConvo = $( '<i class="glyphicon glyphicon-remove"></i>' );//.css( { cursor: 'pointer' }).click( handleDeleteConvoClick );
+			var editContact = $( '<i class="glyphicon glyphicon-edit"></i>' ).css( { cursor: 'pointer' }).click( handleEditContactClick );
+			//var deleteConvo = $( '<i class="glyphicon glyphicon-remove"></i>' );//.css( { cursor: 'pointer' }).click( handleDeleteConvoClick );
 
 
 			var newContactListItem = $( '<li></li>' ).append( editContact, newContactLink, deleteConvo ).appendTo( contactsList );
