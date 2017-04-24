@@ -279,14 +279,16 @@ function populateConversationList() {
 			var newContactLink = $('<a></a>')
 										.text(item.name || item.number)
 										.attr({id: 'sideNavLink_'+item.number, href: "#"})
-										.addClass(item.hasUnread?'ThreadNavUnread':'ThreadNav')
+										.addClass('ThreadNav')
 										.on('click', selectConversation);
+			if(item.hasUnread)
+				newContactLink.addClass('Unread');
 			newContactLink.data( "contactNumber", item.number )
 			var editContact = $( '<i class="glyphicon glyphicon-edit"></i>' ).css( { cursor: 'pointer' }).click( handleEditContactClick );
 			//var deleteConvo = $( '<i class="glyphicon glyphicon-remove"></i>' );//.css( { cursor: 'pointer' }).click( handleDeleteConvoClick );
 
 
-			var newContactListItem = $( '<li></li>' ).append( editContact, newContactLink, deleteConvo ).appendTo( contactsList );
+			var newContactListItem = $( '<li></li>' ).append( editContact, newContactLink).appendTo( contactsList );
 
 			if(item.name)
 

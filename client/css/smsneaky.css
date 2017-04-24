@@ -37,12 +37,11 @@ body {
 /* The navigation menu links */
 .sideNav li {
     margin: 4px 4px 4px 4px;
-    text-decoration: none;
     font-size: 20px;
     color: #818181;
     display: block;
     transition: 0.15s;
-	cursor: pointer;
+    cursor: pointer;
 }
 
 /* When you mouse over the navigation links, change their color */
@@ -50,11 +49,21 @@ body {
     color: #8080ff;
 	/* margin-bottom: 6px; */
 	/* margin-top: 6px; */
-	font-size: 22px;
+	/* font-size: 22px; */
 }
 
-.sideNav .contactListLink {
+.ThreadNav {
 	
+	transition: all ease-in-out 0.25s;
+}
+
+.ThreadNav:hover {
+    text-decoration: none;
+	letter-spacing: 1px;
+}
+
+.Unread {
+	font-weight: bold
 }
 
 /* Position and style the close button (top right corner) */
@@ -74,12 +83,12 @@ body {
 }
 
 a {
-	/*transition: all ease-in-out 1s;*/
+	transition: all ease-in-out 1s;
 }
 
 a:hover {
 	text-decoration: none;
-	font-weight: bold;
+	/* font-weight: bold; */
 }
 
 .optionsDlg {

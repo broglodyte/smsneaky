@@ -140,7 +140,6 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 			db.collection('messages')
 				.find({})
 				.sort({timestamp: -1})
-//				.distinct('contact')
 				.toArray((err, messageList) => {
 					if(err)
 						return res.status(405).json(err);
