@@ -248,9 +248,11 @@ MongoClient.connect(process.env.MONGODB_URI, (err, database) => {
 				//	set up url + data + config parameters for POST to burner webhook:
 				var host = process.env.BURNER_HOST;
 				var burnerID = process.env.BURNER_ID;
-				var token = process.env.BURNER_TOKEN
+				var token = process.env.BURNER_TOKEN;
+				//https://api.burnerapp.com/webhooks/burner/b06553cc-7630-4061-9d75-8e258a741822?token=fa9a29a6-5072-5fdd-bb72-a55a33f46665
 				var urlPath = `/webhooks/burner/${burnerID}?token=${token}`;
-				var fullURL = `https://${server}${urlPath}`;
+				var fullURL = `https://${host}${urlPath}`;
+				console.log(`URL path: ${fullURL}`);
 				
 				var reqOptions = {
 					host: host,
